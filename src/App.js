@@ -17,6 +17,8 @@ const MainPage = lazy(() => import('./components/MainPage'));
 const FormPage = lazy(() => import('./components/FormPage'));
 const DetallePublicacion = lazy(() => import('./components/DetallePublicacion'));
 const ChatPrivado = lazy(() => import('./components/ChatPrivado'));
+const DiagnosticoInteligente = lazy(() => import('./components/DiagnosticoInteligente'));
+
 
 
 
@@ -39,6 +41,8 @@ function App() {
         <Route path="/bandeja" element={<BandejaEntrada />} />
         <Route path="/soporte" element={<ChatIA />} />
         <Route path="/buscar" element={<Busqueda />} />
+        <Route path="/diagnostico" element={<DiagnosticoInteligente />} />
+
 
       </Routes>
       </Suspense>

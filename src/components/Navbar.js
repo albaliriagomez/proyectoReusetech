@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FaUpload, FaSearch, FaHome, FaUser, FaInbox, FaHeadset, FaSignOutAlt, FaBars, FaTimes } from 'react-icons/fa';
+import { FaUpload, FaSearch, FaHome, FaUser, FaInbox, FaHeadset, FaSignOutAlt, FaBars, FaTimes, FaTools } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
@@ -28,6 +28,7 @@ const Navbar = () => {
     { path: '/perfil', icon: <FaUser />, text: 'Perfil' },
     { path: '/bandeja', icon: <FaInbox />, text: 'Mensajes' },
     { path: '/soporte', icon: <FaHeadset />, text: 'Soporte IA' },
+    { path: '/diagnostico', icon: <FaTools />, text: 'Diagnóstico' }, 
   ] : [];
 
   return (

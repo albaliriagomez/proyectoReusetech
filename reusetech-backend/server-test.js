@@ -127,6 +127,8 @@ app.post("/api/publicaciones", upload.single("foto"), async (req, res) => {
   }
 })
 
+
+
 app.post("/api/mensajes", async (req, res) => {
   const { remitente_id, destinatario_id, publicacion_id, contenido } = req.body
   try {
