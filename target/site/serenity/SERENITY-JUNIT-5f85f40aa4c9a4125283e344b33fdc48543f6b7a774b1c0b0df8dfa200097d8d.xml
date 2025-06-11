@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><testsuite errors="4" failures="0" name="CP02 - Validar funcionalidad de registro en ReuseTeach" skipped="0" tests="4" time="123.11" timestamp="2025-06-11 02:24:19"><testcase name="1 - Validar registro con datos válidos"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.RegisterPage.navigateToRegister(RegisterPage.java:70)&#13;
+com.reusetech.test.steps.RegisterSteps.navigateToRegister(RegisterSteps.java:13)&#13;
+com.reusetech.test.definitions.RegisterDefinitions.userNavigatesToRegister(RegisterDefinitions.java:21)&#13;
+</system-err></testcase><testcase name="2 - Validar registro como administrador"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.RegisterPage.navigateToRegister(RegisterPage.java:70)&#13;
+com.reusetech.test.steps.RegisterSteps.navigateToRegister(RegisterSteps.java:13)&#13;
+com.reusetech.test.definitions.RegisterDefinitions.userNavigatesToRegister(RegisterDefinitions.java:21)&#13;
+</system-err></testcase><testcase name="3 - Validar registro con email duplicado"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.RegisterPage.navigateToRegister(RegisterPage.java:70)&#13;
+com.reusetech.test.steps.RegisterSteps.navigateToRegister(RegisterSteps.java:13)&#13;
+com.reusetech.test.definitions.RegisterDefinitions.userNavigatesToRegister(RegisterDefinitions.java:21)&#13;
+</system-err></testcase><testcase name="4 - Validar registro con campos vacíos"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.RegisterPage.navigateToRegister(RegisterPage.java:70)&#13;
+com.reusetech.test.steps.RegisterSteps.navigateToRegister(RegisterSteps.java:13)&#13;
+com.reusetech.test.definitions.RegisterDefinitions.userNavigatesToRegister(RegisterDefinitions.java:21)&#13;
+</system-err></testcase></testsuite>

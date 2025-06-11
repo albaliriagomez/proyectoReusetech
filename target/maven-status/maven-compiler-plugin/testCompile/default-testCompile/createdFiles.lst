@@ -1,0 +1,10 @@
+com\reusetech\test\Runner.class
+com\reusetech\test\definitions\LoginDefinitions.class
+com\reusetech\test\steps\RegisterSteps.class
+com\reusetech\test\pages\RegisterPage.class
+com\reusetech\test\pages\LoginPage.class
+com\reusetech\test\definitions\RegisterDefinitions.class
+com\reusetech\test\pages\ValidationPage.class
+com\reusetech\test\pages\HomePage.class
+com\reusetech\test\steps\LoginSteps.class
+com\reusetech\test\steps\ValidationSteps.class

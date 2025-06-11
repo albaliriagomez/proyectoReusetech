@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><testsuite errors="4" failures="0" name="CP01 - Validar funcionalidad de inicio de sesión en ReuseTeach" skipped="0" tests="4" time="123.19" timestamp="2025-06-11 02:22:15"><testcase name="1 - Validar login con credenciales correctas"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.LoginPage.navigateToLogin(LoginPage.java:47)&#13;
+com.reusetech.test.steps.LoginSteps.navigateToLogin(LoginSteps.java:13)&#13;
+com.reusetech.test.definitions.LoginDefinitions.userNavigatesToLogin(LoginDefinitions.java:21)&#13;
+</system-err></testcase><testcase name="2 - Validar login con credenciales incorrectas"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.LoginPage.navigateToLogin(LoginPage.java:47)&#13;
+com.reusetech.test.steps.LoginSteps.navigateToLogin(LoginSteps.java:13)&#13;
+com.reusetech.test.definitions.LoginDefinitions.userNavigatesToLogin(LoginDefinitions.java:21)&#13;
+</system-err></testcase><testcase name="3 - Validar login con campos vacíos"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.LoginPage.navigateToLogin(LoginPage.java:47)&#13;
+com.reusetech.test.steps.LoginSteps.navigateToLogin(LoginSteps.java:13)&#13;
+com.reusetech.test.definitions.LoginDefinitions.userNavigatesToLogin(LoginDefinitions.java:21)&#13;
+</system-err></testcase><testcase name="4 - Validar login con email inválido"><error message="Could not instantiate class org.openqa.selenium.chrome.ChromeDriver" type="net.thucydides.core.webdriver.DriverConfigurationError">Could not instantiate class org.openqa.selenium.chrome.ChromeDriver</error><system-err>Could not instantiate class org.openqa.selenium.chrome.ChromeDriver&#13;
+com.reusetech.test.pages.LoginPage.navigateToLogin(LoginPage.java:47)&#13;
+com.reusetech.test.steps.LoginSteps.navigateToLogin(LoginSteps.java:13)&#13;
+com.reusetech.test.definitions.LoginDefinitions.userNavigatesToLogin(LoginDefinitions.java:21)&#13;
+</system-err></testcase></testsuite>
