@@ -1,4 +1,4 @@
-# Created at 2025-06-11T14:22:13.795
+# Created at 2025-06-11T19:08:43.673
 Boot Manifest-JAR contains absolute paths in classpath 'D:\programas\Pintegrador\reusetech\target\test-classes'
 Hint: <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 'other' has different root
