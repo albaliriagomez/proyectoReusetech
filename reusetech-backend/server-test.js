@@ -220,38 +220,38 @@ app.get("/api/publicaciones/:id", async (req, res) => {
     res.status(500).json({ message: "Error al obtener los detalles de la publicación" })
   }
 })
-//  Crear comentario público
-app.post("/api/comentarios", async (req, res) => {
-  const { publicacion_id, autor_id, contenido } = req.body
+// Crear comentario público
+app.post('/api/comentarios', async (req, res) => {
+  const { publicacion_id, autor_id, contenido } = req.body;
   try {
     const result = await pool.query(
-      "INSERT INTO comentarios (publicacion_id, autor_id, contenido) VALUES ($1, $2, $3) RETURNING *",
-      [publicacion_id, autor_id, contenido],
-    )
-    res.status(201).json(result.rows[0])
+      'INSERT INTO comentarios (publicacion_id, autor_id, contenido) VALUES ($1, $2, $3) RETURNING *',
+      [publicacion_id, autor_id, contenido]
+    );
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error al crear comentario:", error)
-    res.status(500).json({ message: "Error al guardar comentario" })
+    console.error('Error al crear comentario:', error);
+    res.status(500).json({ error: 'Error al guardar comentario' });
   }
-})
+});
 
-//  Obtener comentarios públicos por publicación
-app.get("/api/comentarios/:publicacion_id", async (req, res) => {
-  const { publicacion_id } = req.params
+// Obtener comentarios públicos por publicación
+app.get('/api/comentarios/:publicacion_id', async (req, res) => {
+  const { publicacion_id } = req.params;
   try {
     const result = await pool.query(
       `SELECT c.*, u.nombre FROM comentarios c 
        JOIN usuarios u ON c.autor_id = u.id 
        WHERE publicacion_id = $1 
        ORDER BY fecha DESC`,
-      [publicacion_id],
-    )
-    res.status(200).json(result.rows)
+      [publicacion_id]
+    );
+    res.status(200).json(result.rows);
   } catch (error) {
-    console.error("Error al obtener comentarios:", error)
-    res.status(500).json({ message: "Error al obtener comentarios" })
+    console.error('Error al obtener comentarios:', error);
+    res.status(500).json({ error: 'Error al obtener comentarios' });
   }
-})
+});
 
 // Obtener conversaciones únicas por usuario (tipo bandeja de entrada)
 app.get("/api/conversaciones/:userId", async (req, res) => {
