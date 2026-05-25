@@ -1,0 +1,30 @@
+{
+  "0": {
+    "estado": "PARA RECICLAR",
+    "puntuacion": 12,
+    "color": "#DC2626",
+    "analisis": "Daños estructurales críticos detectados. El dispositivo presenta fallas múltiples que imposibilitan su reutilización funcional. Recomendamos desmantelamiento controlado para recuperación de polímeros técnicos y metales base mediante procesos certificados.",
+    "recomendacion_pro": "Gestión de E-Waste: Envío a planta de reciclaje certificada R2 o e-Stewards para separación de componentes y recuperación de materiales estratégicos."
+  },
+  "1": {
+    "estado": "PARA REPUESTOS",
+    "puntuacion": 35,
+    "color": "#EA580C",
+    "analisis": "El equipo presenta fallas críticas en subsistemas principales, pero conserva módulos funcionales de alto valor. Componentes como pantallas LCD, teclados mecánicos, módulos de memoria y almacenamiento son aptos para trasplante técnico.",
+    "recomendacion_pro": "Harvesting de Componentes: Desmantelamiento técnico para donación de órganos a equipos de la misma familia o reventa en mercado de repuestos OEM."
+  },
+  "2": {
+    "estado": "PARA DONAR",
+    "puntuacion": 58,
+    "color": "#2563EB",
+    "analisis": "Funcionalidad operativa estable para cargas de trabajo básicas (ofimática, navegación, multimedia). Aunque presenta desgaste cosmético o batería degradada, el hardware mantiene capacidad suficiente para tareas productivas estándar.",
+    "recomendacion_pro": "Programa de Reacondicionamiento Social: Limpieza, reinstalación de OS, y canalización a instituciones educativas, ONGs o proyectos de alfabetización digital comunitaria."
+  },
+  "3": {
+    "estado": "PARA REPARAR",
+    "puntuacion": 88,
+    "color": "#16A34A",
+    "analisis": "Potencial de reuso óptimo detectado. El dispositivo mantiene arquitectura de hardware vigente y componentes en estado funcional. Una intervención técnica estándar (reemplazo de batería, actualización de firmware, limpieza profunda) lo reintegrará al mercado secundario premium.",
+    "recomendacion_pro": "Refurbishing Premium: Proceso de restauración técnica completa con certificación de calidad para reventa en canales de mercado abierto o corporativo."
+  }
+}

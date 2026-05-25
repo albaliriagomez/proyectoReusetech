@@ -1,18 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import io from 'socket.io-client';
-import { Send, ArrowLeft, Clock } from 'lucide-react';
+import { 
+  Send, ArrowLeft, Clock, ShieldCheck, 
+  Smartphone, Check, MoreVertical 
+} from 'lucide-react';
 
 const socket = io('http://localhost:5000');
 
 const ChatPrivado = () => {
   const { user1, user2, publicacionId } = useParams();
+  const navigate = useNavigate();
   const remitente = parseInt(user1);
   const destinatario = parseInt(user2);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+  
   const [mensajes, setMensajes] = useState([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [cargando, setCargando] = useState(true);
@@ -23,19 +28,13 @@ const ChatPrivado = () => {
 
   useEffect(() => {
     socket.emit('joinRoom', { room });
-
     socket.on('receiveMessage', (mensaje) => {
       setMensajes((prev) => [...prev, mensaje]);
     });
-
     cargarMensajes();
     cargarInfoUsuario();
-
-    return () => {
-      socket.off('receiveMessage');
-      socket.disconnect();
-    };
-  }, [user1, user2, publicacionId]);
+    return () => { socket.off('receiveMessage'); };
+  }, [user1, user2, publicacionId, room]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -43,12 +42,9 @@ const ChatPrivado = () => {
 
   const cargarInfoUsuario = async () => {
     try {
-      // Asumiendo que tienes un endpoint para obtener información del usuario
       const res = await axios.get(`http://localhost:5000/api/usuarios/${destinatario}`);
       setNombreDestinatario(res.data.nombre || 'Usuario');
-    } catch (error) {
-      console.error('Error al cargar información del usuario:', error);
-    }
+    } catch (error) { console.error(error); }
   };
 
   const cargarMensajes = async () => {
@@ -56,17 +52,12 @@ const ChatPrivado = () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/mensajes/${publicacionId}/${user1}/${user2}`);
       setMensajes(res.data);
-    } catch (error) {
-      console.error('Error al cargar mensajes:', error);
-    } finally {
-      setCargando(false);
-    }
+    } catch (error) { console.error(error); } finally { setCargando(false); }
   };
 
   const enviarMensaje = async (e) => {
     e?.preventDefault();
     if (!nuevoMensaje.trim()) return;
-    
     setEnviando(true);
     const mensajeData = {
       remitente_id: remitente,
@@ -74,130 +65,120 @@ const ChatPrivado = () => {
       publicacion_id: publicacionId,
       contenido: nuevoMensaje,
     };
-
     try {
       const res = await axios.post(`http://localhost:5000/api/mensajes`, mensajeData);
       socket.emit('sendMessage', { ...res.data, room });
       setNuevoMensaje('');
       inputRef.current?.focus();
-    } catch (error) {
-      console.error('Error al enviar mensaje:', error);
-    } finally {
-      setEnviando(false);
-    }
+    } catch (error) { console.error(error); } finally { setEnviando(false); }
   };
 
   const formatearFecha = (fechaStr) => {
     if (!fechaStr) return '';
     const fecha = new Date(fechaStr);
-    return fecha.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit'
-    });
+    return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
-    <motion.div 
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-6 px-4 md:px-6 flex items-center justify-center"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <div className="w-full max-w-3xl bg-white shadow-2xl rounded-2xl overflow-hidden flex flex-col h-[80vh]">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-4 flex items-center shadow-md">
-          <motion.button 
-            className="mr-3 p-1 rounded-full hover:bg-white/20 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <ArrowLeft size={20} />
-          </motion.button>
-          <div>
-            <h1 className="text-xl font-bold">{nombreDestinatario}</h1>
-            <p className="text-xs text-blue-100">ID Publicación: {publicacionId}</p>
-          </div>
-        </div>
-        
-        {/* Chat Area */}
-        <div className="flex-1 p-6 overflow-y-auto bg-gradient-to-b from-blue-50 to-white space-y-4">
-          {cargando ? (
-            <div className="flex justify-center items-center h-full">
-              <div className="animate-pulse flex flex-col items-center">
-                <div className="h-12 w-12 rounded-full bg-blue-200 mb-2"></div>
-                <div className="h-4 w-24 bg-blue-200 rounded"></div>
+    <div className="min-h-screen bg-[#f4f7f9] font-['Plus_Jakarta_Sans'] flex flex-col">
+      
+      {/* HEADER CON NUESTRO CELESTE */}
+      <nav className="bg-white/90 backdrop-blur-md sticky top-0 z-30 border-b border-[#5bc0de]/20 px-4 py-3 shadow-sm">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <motion.button 
+              onClick={() => navigate(-1)}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 hover:bg-cyan-50 rounded-full text-[#5bc0de] transition-colors"
+            >
+              <ArrowLeft size={24} />
+            </motion.button>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-[#5bc0de] rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-[#5bc0de]/30">
+                {nombreDestinatario.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="font-black text-slate-800 leading-tight">{nombreDestinatario}</h2>
+                <div className="flex items-center gap-1 text-[#5bc0de] text-[10px] font-black uppercase tracking-tighter">
+                  <Smartphone size={10} /> Publicación #{publicacionId}
+                </div>
               </div>
             </div>
-          ) : mensajes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <Clock size={48} className="mb-3 opacity-50" />
-              <p className="text-center">No hay mensajes aún.<br/>¡Envía el primero!</p>
-            </div>
-          ) : (
-            mensajes.map((msg, index) => {
+          </div>
+          <button className="p-2 text-slate-400"><MoreVertical size={20} /></button>
+        </div>
+      </nav>
+
+      {/* ÁREA DE MENSAJES */}
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-6 overflow-y-auto">
+        <div className="flex flex-col gap-4">
+          <AnimatePresence>
+            {mensajes.map((msg, index) => {
               const esMio = msg.remitente_id === remitente;
-              const mostrarFecha = index === 0 || new Date(msg.fecha_envio).getDate() !== new Date(mensajes[index - 1]?.fecha_envio).getDate();
-              
               return (
-                <React.Fragment key={msg.id || `msg-${index}`}>
-                  {mostrarFecha && (
-                    <div className="flex justify-center my-4">
-                      <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full">
-                        {new Date(msg.fecha_envio).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className={`max-w-xs md:max-w-md flex flex-col ${
-                      esMio ? 'ml-auto items-end' : 'mr-auto items-start'
-                    }`}
-                  >
-                    <div className={`px-4 py-3 rounded-2xl shadow-sm ${
+                <motion.div
+                  key={msg.id || `msg-${index}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[80%] flex flex-col ${esMio ? 'items-end' : 'items-start'}`}>
+                    <div className={`px-5 py-3 rounded-[1.8rem] shadow-sm ${
                       esMio 
-                        ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-none' 
-                        : 'bg-white text-gray-800 border border-gray-100 rounded-bl-none'
+                        ? 'bg-[#5bc0de] text-white rounded-br-none' 
+                        : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
                     }`}>
-                      <p className="break-words">{msg.contenido}</p>
+                      <p className="text-sm md:text-base font-bold leading-relaxed">{msg.contenido}</p>
                     </div>
-                    <div className={`text-xs mt-1 ${esMio ? 'text-gray-500' : 'text-gray-400'} flex items-center`}>
-                      {formatearFecha(msg.fecha_envio)}
+                    <div className="flex items-center gap-1 mt-1 px-2">
+                      <span className="text-[10px] font-bold text-slate-400">{formatearFecha(msg.fecha_envio)}</span>
+                      {esMio && <Check size={12} className="text-[#5bc0de]" />}
                     </div>
-                  </motion.div>
-                </React.Fragment>
+                  </div>
+                </motion.div>
               );
-            })
-          )}
+            })}
+          </AnimatePresence>
           <div ref={chatEndRef} />
         </div>
-        
-        {/* Input Area */}
-        <form onSubmit={enviarMensaje} className="bg-white p-4 border-t border-gray-100 shadow-inner">
-          <div className="flex items-center bg-gray-50 rounded-full overflow-hidden border border-gray-200 shadow-sm focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
-            <input
-              ref={inputRef}
-              type="text"
-              value={nuevoMensaje}
-              onChange={(e) => setNuevoMensaje(e.target.value)}
-              placeholder="Escribe tu mensaje..."
-              className="flex-1 px-4 py-3 bg-transparent focus:outline-none text-gray-700"
-              disabled={enviando}
-            />
-            <motion.button
-              type="submit"
-              className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full mr-1"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              disabled={enviando || !nuevoMensaje.trim()}
-            >
-              <Send size={20} className={enviando ? "animate-pulse" : ""} />
-            </motion.button>
-          </div>
+      </main>
+
+      {/* INPUT CON NUESTRO CELESTE */}
+      <footer className="bg-white border-t border-slate-100 p-4">
+        <form 
+          onSubmit={enviarMensaje}
+          className="max-w-4xl mx-auto flex items-center gap-2 bg-slate-50 p-1.5 rounded-[2rem] border border-slate-200 focus-within:border-[#5bc0de]/50 transition-all"
+        >
+          <input
+            ref={inputRef}
+            type="text"
+            value={nuevoMensaje}
+            onChange={(e) => setNuevoMensaje(e.target.value)}
+            placeholder="Escribe un mensaje..."
+            className="flex-1 bg-transparent px-4 py-2 outline-none text-slate-700 font-bold text-sm"
+            disabled={enviando}
+          />
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            disabled={!nuevoMensaje.trim()}
+            className={`p-3 rounded-full transition-all ${
+              !nuevoMensaje.trim() ? 'bg-slate-200 text-slate-400' : 'bg-[#5bc0de] text-white shadow-md shadow-[#5bc0de]/40'
+            }`}
+          >
+            <Send size={20} />
+          </motion.button>
         </form>
-      </div>
-    </motion.div>
+        
+        {/* REFUERZO DE SEGURIDAD ABAJO */}
+        <div className="flex justify-center items-center gap-2 mt-3 text-[#5bc0de] opacity-60">
+          <ShieldCheck size={12} />
+          <span className="text-[9px] font-black uppercase tracking-[0.1em]">Coordinación Segura ReUseTech</span>
+        </div>
+      </footer>
+    </div>
   );
 };
 

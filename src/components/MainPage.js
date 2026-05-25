@@ -1,236 +1,631 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { FaLocationArrow, FaCalendarAlt, FaFilter, FaSearch } from 'react-icons/fa';
+import axios from 'axios';
+import {
+  Search, SlidersHorizontal, X, ChevronDown, ChevronRight,
+  ArrowUpRight, Calendar, Cpu, Package, TrendingUp, Users,
+  Sparkles, Leaf, Globe, Zap, Check, RotateCcw, ArrowUpDown,
+  SortAsc, SortDesc, MapPin, Tag, Activity, Filter
+} from 'lucide-react';
 
-const MainPage = () => {
-  const [publicaciones, setPublicaciones] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [categoriaFiltro, setCategoriaFiltro] = useState('todas');
-  const navigate = useNavigate();
-  
+// ─── CONSTANTES ──────────────────────────────────────────────────────────────
+const API = 'http://localhost:5000';
+const LIMIT = 12;
+
+const CATEGORIAS = [
+  { value: 'Teléfonos y Accesorios',      emoji: '📱', count: null },
+  { value: 'Computadoras y Accesorios',   emoji: '💻', count: null },
+  { value: 'Electrodomésticos',           emoji: '🏠', count: null },
+  { value: 'Otros',                       emoji: '📦', count: null },
+];
+
+const ESTADOS = [
+  { value: 'Buen estado', color: '#22c55e', dot: true },
+  { value: 'Usado',       color: '#f59e0b', dot: true },
+  { value: 'Reciclaje',   color: '#ef4444', dot: true },
+];
+
+const UBICACIONES = [
+  'Cochabamba', 'Cochabamba-cercado', 'Quillacollo', 'Sacaba',
+  'La Paz', 'Santa Cruz', 'Oruro', 'Potosí',
+];
+
+const ORDENAR = [
+  { value: 'reciente',   label: 'Más recientes',   icon: <SortDesc size={13}/> },
+  { value: 'antiguo',    label: 'Más antiguos',     icon: <SortAsc  size={13}/> },
+  { value: 'az',         label: 'A → Z',            icon: <SortAsc  size={13}/> },
+  { value: 'za',         label: 'Z → A',            icon: <SortDesc size={13}/> },
+];
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function useDebounce(value, delay) {
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const fetchPublicaciones = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get('http://localhost:5000/api/publicaciones');
-        setPublicaciones(response.data);
-      } catch (error) {
-        console.error('Error al obtener las publicaciones:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
-    fetchPublicaciones();
+function buildParams({ busqueda, categorias, estados, ubicaciones, orden, page }) {
+  const p = new URLSearchParams();
+  if (busqueda)               p.set('q',          busqueda);
+  categorias.forEach(c =>     p.append('categoria', c));
+  estados.forEach(e =>        p.append('estado',    e));
+  ubicaciones.forEach(u =>    p.append('ubicacion', u));
+  if (orden)                  p.set('orden',      orden);
+  p.set('page',  String(page));
+  p.set('limit', String(LIMIT));
+  return p;
+}
+
+// ─── CHIP DE FILTRO ACTIVO ────────────────────────────────────────────────────
+const ActiveChip = ({ label, onRemove }) => (
+  <motion.span
+    initial={{ scale: 0.8, opacity: 0 }}
+    animate={{ scale: 1, opacity: 1 }}
+    exit={{ scale: 0.8, opacity: 0 }}
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+    style={{ background: 'rgba(49,194,219,0.12)', color: '#31C2DB', border: '1px solid rgba(49,194,219,0.25)' }}
+  >
+    {label}
+    <button onClick={onRemove} className="hover:opacity-70 transition-opacity">
+      <X size={11} />
+    </button>
+  </motion.span>
+);
+
+// ─── SECCIÓN COLAPSABLE DEL SIDEBAR ──────────────────────────────────────────
+const SidebarSection = ({ title, icon, children, defaultOpen = true }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-slate-100 pb-5 mb-5 last:border-0 last:pb-0 last:mb-0">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center justify-between w-full mb-3 group"
+      >
+        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400">
+          <span style={{ color: '#31C2DB' }}>{icon}</span>
+          {title}
+        </div>
+        <ChevronDown
+          size={14}
+          className="text-slate-400 transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            {children}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// ─── CARD DE PUBLICACIÓN ──────────────────────────────────────────────────────
+const PubCard = ({ pub }) => (
+  <motion.div
+    layout
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, scale: 0.95 }}
+    whileHover={{ y: -5 }}
+    className="bg-white rounded-[1.75rem] overflow-hidden border border-slate-100 shadow-sm group"
+    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 20px 40px rgba(49,194,219,0.10)')}
+    onMouseLeave={e => (e.currentTarget.style.boxShadow = '')}
+  >
+    <Link to={`/Detalle/${pub.id}`} className="block relative overflow-hidden" style={{ height: 200 }}>
+      {pub.foto ? (
+        <img
+          src={`${API}/uploads/${pub.foto}`}
+          alt={pub.titulo}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(49,194,219,0.06)' }}>
+          <Cpu size={44} style={{ color: 'rgba(49,194,219,0.3)' }} />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      {/* Badges */}
+      <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+        <span className="text-[10px] font-black px-3 py-1 rounded-full backdrop-blur-md"
+          style={{ background: 'rgba(255,255,255,0.92)', color: '#0f172a', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+          {pub.categoria || 'General'}
+        </span>
+        {pub.estado && (
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md flex items-center gap-1"
+            style={{ background: 'rgba(255,255,255,0.92)' }}>
+            <span className="w-1.5 h-1.5 rounded-full inline-block"
+              style={{ background: ESTADOS.find(e => e.value === pub.estado)?.color || '#94a3b8' }} />
+            {pub.estado}
+          </span>
+        )}
+      </div>
+    </Link>
+
+    <div className="p-5">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold mb-2 uppercase tracking-widest" style={{ color: '#31C2DB' }}>
+        <Calendar size={11} />
+        {new Date(pub.fecha || Date.now()).toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric' })}
+        {pub.ubicacion && (
+          <>
+            <span className="text-slate-200 mx-1">•</span>
+            <MapPin size={11} />
+            {pub.ubicacion}
+          </>
+        )}
+      </div>
+
+      <Link to={`/Detalle/${pub.id}`}>
+        <h3 className="text-base font-[800] text-slate-800 leading-snug transition-colors line-clamp-2"
+          onMouseEnter={e => (e.target.style.color = '#31C2DB')}
+          onMouseLeave={e => (e.target.style.color = '')}>
+          {pub.titulo}
+        </h3>
+      </Link>
+
+      <p className="text-slate-500 text-sm mt-2 line-clamp-2 font-medium leading-relaxed">
+        {pub.descripcion}
+      </p>
+
+      <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+        <Link to={`/Detalle/${pub.id}`}
+          className="flex items-center gap-1 text-xs font-[900] text-slate-800 uppercase tracking-tight group-hover:gap-2 transition-all">
+          Ver más <ChevronRight size={14} style={{ color: '#31C2DB' }} />
+        </Link>
+        <button className="p-2 rounded-full transition-colors"
+          style={{ background: 'rgba(49,194,219,0.06)' }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(49,194,219,0.15)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(49,194,219,0.06)')}>
+          <ArrowUpRight size={16} style={{ color: '#31C2DB' }} />
+        </button>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// ─── SKELETON CARD ────────────────────────────────────────────────────────────
+const SkeletonCard = () => (
+  <div className="bg-white rounded-[1.75rem] overflow-hidden border border-slate-100">
+    <div className="h-48 bg-slate-100 animate-pulse" />
+    <div className="p-5 space-y-3">
+      <div className="h-3 w-24 bg-slate-100 rounded-full animate-pulse" />
+      <div className="h-5 w-3/4 bg-slate-100 rounded-full animate-pulse" />
+      <div className="h-3 w-full bg-slate-100 rounded-full animate-pulse" />
+      <div className="h-3 w-2/3 bg-slate-100 rounded-full animate-pulse" />
+    </div>
+  </div>
+);
+
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+const MainPage = () => {
+  // Estados de filtro
+  const [busqueda,         setBusqueda]         = useState('');
+  const [categoriasActivas, setCategoriasActivas] = useState([]);
+  const [estadosActivos,    setEstadosActivos]   = useState([]);
+  const [ubicacionesActivas, setUbicacionesActivas] = useState([]);
+  const [orden,             setOrden]            = useState('reciente');
+  const [sidebarOpen,       setSidebarOpen]      = useState(true);
+  const [sortOpen,          setSortOpen]         = useState(false);
+
+  // Paginación / datos
+  const [publicaciones, setPublicaciones] = useState([]);
+  const [page,          setPage]          = useState(1);
+  const [hasMore,       setHasMore]       = useState(true);
+  const [loading,       setLoading]       = useState(true);
+  const [loadingMore,   setLoadingMore]   = useState(false);
+  const [total,         setTotal]         = useState(0);
+
+  const debouncedBusqueda = useDebounce(busqueda, 350);
+  const loaderRef = useRef(null);
+  const sortRef   = useRef(null);
+
+  // Cierra dropdown al click fuera
+  useEffect(() => {
+    const fn = e => { if (sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false); };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
   }, []);
 
-  // Categorías únicas para el filtro
-  const categorias = ['todas', ...new Set(publicaciones.map(p => p.categoria || 'General'))];
-  
-  // Filtrar publicaciones por categoría
-  const publicacionesFiltradas = categoriaFiltro === 'todas' 
-    ? publicaciones 
-    : publicaciones.filter(p => (p.categoria || 'General') === categoriaFiltro);
+  // Fetch con reset al cambiar filtros
+  const fetchPublicaciones = useCallback(async (resetPage = false) => {
+    const currentPage = resetPage ? 1 : page;
+    if (resetPage) { setLoading(true); setPublicaciones([]); setPage(1); setHasMore(true); }
+    else setLoadingMore(true);
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+    try {
+      const params = buildParams({
+        busqueda: debouncedBusqueda,
+        categorias: categoriasActivas,
+        estados:    estadosActivos,
+        ubicaciones: ubicacionesActivas,
+        orden,
+        page: currentPage,
+      });
+
+      const { data } = await axios.get(`${API}/api/publicaciones?${params}`);
+
+      // El backend devuelve { rows, total } o array legacy
+      const rows  = Array.isArray(data) ? data : (data.rows  ?? []);
+      const count = Array.isArray(data) ? null  : (data.total ?? null);
+
+      if (count !== null) setTotal(count);
+
+      setPublicaciones(prev => resetPage ? rows : [...prev, ...rows]);
+      setHasMore(rows.length === LIMIT);
+    } catch (err) {
+      console.error('Error al cargar publicaciones:', err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
     }
+  }, [debouncedBusqueda, categoriasActivas, estadosActivos, ubicacionesActivas, orden, page]);
+
+  // Reset cuando cambian filtros
+  useEffect(() => { fetchPublicaciones(true); },
+    [debouncedBusqueda, categoriasActivas, estadosActivos, ubicacionesActivas, orden]);
+
+  // Carga más al hacer scroll (Intersection Observer)
+  useEffect(() => {
+    if (!loaderRef.current) return;
+    const observer = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) setPage(p => p + 1); },
+      { threshold: 0.1 }
+    );
+    observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading]);
+
+  useEffect(() => { if (page > 1) fetchPublicaciones(false); }, [page]);
+
+  // Toggle helpers
+  const toggleArr = (arr, setArr, val) =>
+    setArr(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
+
+  const resetAll = () => {
+    setBusqueda('');
+    setCategoriasActivas([]);
+    setEstadosActivos([]);
+    setUbicacionesActivas([]);
+    setOrden('reciente');
   };
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring', stiffness: 100 }
-    }
-  };
+  const activeCount =
+    categoriasActivas.length + estadosActivos.length + ubicacionesActivas.length +
+    (debouncedBusqueda ? 1 : 0);
+
+  const activeChips = [
+    ...(debouncedBusqueda ? [{ label: `"${debouncedBusqueda}"`, onRemove: () => setBusqueda('') }] : []),
+    ...categoriasActivas.map(c => ({ label: c, onRemove: () => toggleArr(categoriasActivas, setCategoriasActivas, c) })),
+    ...estadosActivos.map(e   => ({ label: e, onRemove: () => toggleArr(estadosActivos,    setEstadosActivos,    e) })),
+    ...ubicacionesActivas.map(u => ({ label: u, onRemove: () => toggleArr(ubicacionesActivas, setUbicacionesActivas, u) })),
+  ];
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Header con buscador */}
-      <div className="bg-gradient-to-b from-gray-50 to-white py-8 px-6 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="bg-[#f8fafc] min-h-screen font-['Plus_Jakarta_Sans']">
+
+      {/* ── HERO ────────────────────────────────────────────────── */}
+      <div className="relative bg-white border-b border-slate-100 overflow-hidden">
+        <div className="absolute top-[-40%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[140px] opacity-15 pointer-events-none"
+          style={{ background: '#31C2DB' }} />
+
+        <div className="max-w-[1600px] mx-auto px-6 pt-10 pb-0 relative z-10">
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5 border"
+            style={{ background: 'rgba(49,194,219,0.08)', borderColor: 'rgba(49,194,219,0.25)', color: '#31C2DB' }}>
+            <Sparkles size={13} /> Equipos para una segunda vida
+          </motion.div>
+
+          <div className="flex flex-col lg:flex-row justify-between items-end gap-6 pb-5">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Explorar tecnología</h1>
-              <p className="text-gray-600 mt-1">Encuentra dispositivos reutilizables para darles una segunda vida</p>
+              <h1 className="text-4xl md:text-5xl font-[900] text-slate-900 tracking-tight leading-tight">
+                Explorar <span style={{ color: '#31C2DB' }}>Tecnología</span>
+              </h1>
+              <p className="text-slate-500 mt-2 font-medium text-lg">
+                {total > 0 ? `${total.toLocaleString()} equipos disponibles` : 'Encuentra equipos listos para brillar de nuevo'}
+              </p>
             </div>
-            <div className="w-full md:w-auto">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Buscar dispositivos..."
-                  className="w-full md:w-64 px-4 py-2 pr-10 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cyan-500">
-                  <FaSearch />
+
+            {/* Buscador principal */}
+            <div className="w-full lg:w-[520px] relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors"
+                style={{ color: busqueda ? '#31C2DB' : undefined }} size={18} />
+              <input
+                type="text"
+                placeholder="Buscar por título, descripción, marca..."
+                value={busqueda}
+                onChange={e => setBusqueda(e.target.value)}
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 rounded-2xl text-sm font-bold text-slate-700 outline-none transition-all border-2"
+                style={{ borderColor: busqueda ? 'rgba(49,194,219,0.35)' : 'transparent' }}
+                onFocus={e  => (e.target.style.borderColor = 'rgba(49,194,219,0.35)')}
+                onBlur={e   => (e.target.style.borderColor = busqueda ? 'rgba(49,194,219,0.35)' : 'transparent')}
+              />
+              {busqueda && (
+                <button onClick={() => setBusqueda('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                  <X size={16} />
                 </button>
-              </div>
+              )}
             </div>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-6 pb-4 border-b border-slate-50">
+            {[
+              { icon: <Package size={13} />, label: `${publicaciones.length} cargados` },
+              { icon: <TrendingUp size={13} />, label: 'Actualizado hoy' },
+              { icon: <Users size={13} />, label: '+10k usuarios' },
+            ].map((s, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+                <span style={{ color: '#31C2DB' }}>{s.icon}</span>{s.label}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Publicaciones con filtros */}
-      <section className="py-10 px-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Cabecera con filtros */}
-          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-2">
-              <FaFilter className="text-cyan-500" />
-              <span className="font-medium text-gray-700">Filtrar por:</span>
-              <div className="flex flex-wrap gap-2">
-                {categorias.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setCategoriaFiltro(cat)}
-                    className={`px-3 py-1 text-sm rounded-full transition ${
-                      categoriaFiltro === cat
-                        ? 'bg-cyan-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <Link 
-              to="/buscar" 
-              className="text-cyan-600 hover:text-cyan-700 font-medium flex items-center gap-1"
+      {/* ── LAYOUT PRINCIPAL ───────────────────────────────────── */}
+      <div className="max-w-[1600px] mx-auto px-6 py-8 flex gap-8">
+
+        {/* ── SIDEBAR FILTROS ─────────────────────────────────── */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.aside
+              key="sidebar"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 300, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="flex-shrink-0 overflow-hidden"
+              style={{ width: 300 }}
             >
-              Búsqueda avanzada <FaLocationArrow size={12} />
-            </Link>
+              <div className="bg-white rounded-[2rem] border border-slate-100 p-6 sticky top-6 shadow-sm"
+                style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+
+                {/* Header sidebar */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal size={16} style={{ color: '#31C2DB' }} />
+                    <span className="font-[900] text-slate-800 text-sm">Filtros</span>
+                    {activeCount > 0 && (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
+                        style={{ background: '#31C2DB' }}>
+                        {activeCount}
+                      </span>
+                    )}
+                  </div>
+                  {activeCount > 0 && (
+                    <button onClick={resetAll}
+                      className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-red-400 transition-colors">
+                      <RotateCcw size={12} /> Limpiar
+                    </button>
+                  )}
+                </div>
+
+                {/* Categorías */}
+                <SidebarSection title="Categoría" icon={<Tag size={12}/>}>
+                  <div className="space-y-1.5">
+                    {CATEGORIAS.map(cat => {
+                      const active = categoriasActivas.includes(cat.value);
+                      return (
+                        <button key={cat.value} onClick={() => toggleArr(categoriasActivas, setCategoriasActivas, cat.value)}
+                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                          style={active
+                            ? { background: 'rgba(49,194,219,0.10)', color: '#31C2DB', border: '1.5px solid rgba(49,194,219,0.25)' }
+                            : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{cat.emoji}</span>
+                            <span className="text-xs font-bold">{cat.value}</span>
+                          </div>
+                          {active && <Check size={13} style={{ color: '#31C2DB' }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </SidebarSection>
+
+                {/* Estado */}
+                <SidebarSection title="Estado" icon={<Activity size={12}/>}>
+                  <div className="space-y-1.5">
+                    {ESTADOS.map(est => {
+                      const active = estadosActivos.includes(est.value);
+                      return (
+                        <button key={est.value} onClick={() => toggleArr(estadosActivos, setEstadosActivos, est.value)}
+                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                          style={active
+                            ? { background: `${est.color}15`, color: est.color, border: `1.5px solid ${est.color}40` }
+                            : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: est.color }} />
+                            {est.value}
+                          </div>
+                          {active && <Check size={13} style={{ color: est.color }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </SidebarSection>
+
+                {/* Ubicación */}
+                <SidebarSection title="Ubicación" icon={<MapPin size={12}/>}>
+                  <div className="space-y-1">
+                    {UBICACIONES.map(ub => {
+                      const active = ubicacionesActivas.includes(ub);
+                      return (
+                        <button key={ub} onClick={() => toggleArr(ubicacionesActivas, setUbicacionesActivas, ub)}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                          style={active
+                            ? { background: 'rgba(49,194,219,0.10)', color: '#31C2DB', border: '1.5px solid rgba(49,194,219,0.25)' }
+                            : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
+                          {ub}
+                          {active && <Check size={12} style={{ color: '#31C2DB' }} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </SidebarSection>
+
+                {/* CTA footer sidebar */}
+                <div className="mt-4 pt-4 border-t border-slate-50">
+                  <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(49,194,219,0.06)' }}>
+                    <Leaf size={18} className="mx-auto mb-2" style={{ color: '#31C2DB' }} />
+                    <p className="text-xs font-bold text-slate-600">Economía Circular</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Cada equipo cuenta</p>
+                  </div>
+                </div>
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* ── CONTENIDO PRINCIPAL ─────────────────────────────── */}
+        <div className="flex-1 min-w-0">
+
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+            <div className="flex items-center gap-3">
+              {/* Toggle sidebar */}
+              <button onClick={() => setSidebarOpen(o => !o)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black transition-all"
+                style={sidebarOpen
+                  ? { background: '#31C2DB', color: 'white', boxShadow: '0 4px 14px rgba(49,194,219,0.30)' }
+                  : { background: 'white', color: '#64748b', border: '1.5px solid #e2e8f0' }}>
+                <Filter size={13} />
+                {sidebarOpen ? 'Ocultar filtros' : 'Mostrar filtros'}
+                {activeCount > 0 && !sidebarOpen && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black"
+                    style={{ background: 'rgba(255,255,255,0.3)' }}>
+                    {activeCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Resultado count */}
+              <span className="text-xs font-bold text-slate-400">
+                {loading ? '...' : `${publicaciones.length}${total ? ` de ${total.toLocaleString()}` : ''} equipos`}
+              </span>
+            </div>
+
+            {/* Ordenar dropdown */}
+            <div className="relative" ref={sortRef}>
+              <button onClick={() => setSortOpen(o => !o)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl text-xs font-black text-slate-700 border border-slate-200 hover:border-slate-300 transition-all">
+                <ArrowUpDown size={13} style={{ color: '#31C2DB' }} />
+                {ORDENAR.find(o => o.value === orden)?.label}
+                <ChevronDown size={12} style={{ transform: sortOpen ? 'rotate(180deg)' : '', transition: 'transform 0.2s' }} />
+              </button>
+
+              <AnimatePresence>
+                {sortOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                    className="absolute right-0 top-full mt-2 z-50 bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden"
+                    style={{ minWidth: 180 }}>
+                    {ORDENAR.map(op => (
+                      <button key={op.value}
+                        onClick={() => { setOrden(op.value); setSortOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-xs font-bold text-left transition-colors hover:bg-slate-50"
+                        style={{ color: orden === op.value ? '#31C2DB' : '#475569' }}>
+                        {op.icon}
+                        {op.label}
+                        {orden === op.value && <Check size={12} className="ml-auto" style={{ color: '#31C2DB' }} />}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* Contenido de publicaciones */}
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+          {/* Chips de filtros activos */}
+          <AnimatePresence>
+            {activeChips.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex flex-wrap gap-2 mb-5">
+                {activeChips.map((chip, i) => (
+                  <ActiveChip key={i} label={chip.label} onRemove={chip.onRemove} />
+                ))}
+                {activeChips.length > 1 && (
+                  <button onClick={resetAll}
+                    className="text-xs font-black px-3 py-1.5 rounded-full text-red-400 border border-red-100 hover:bg-red-50 transition-colors">
+                    Limpiar todo
+                  </button>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Grid */}
+          {loading ? (
+            <div className={`grid gap-5 ${sidebarOpen
+              ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
-          ) : publicacionesFiltradas.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 rounded-lg">
-              <p className="text-gray-500 text-lg">No hay publicaciones disponibles en esta categoría</p>
-              {categoriaFiltro !== 'todas' && (
-                <button 
-                  onClick={() => setCategoriaFiltro('todas')}
-                  className="mt-4 text-cyan-600 hover:text-cyan-700"
-                >
-                  Ver todas las categorías
-                </button>
-              )}
-            </div>
-          ) : (
-            <motion.div
-              className="grid gap-8 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {publicacionesFiltradas.map((publicacion) => (
-                <motion.div
-                  key={publicacion.id}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 overflow-hidden border border-gray-100 flex flex-col h-full"
-                  variants={itemVariants}
-                >
-                  <Link to={`/Detalle/${publicacion.id}`} className="block overflow-hidden relative">
-                    {publicacion.foto ? (
-                      <img
-                        src={`http://localhost:5000/uploads/${publicacion.foto}`}
-                        alt="Imagen de publicación"
-                        className="w-full h-52 object-cover transform hover:scale-105 transition duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-52 bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400">Sin imagen</span>
-                      </div>
-                    )}
-                    <div className="absolute top-3 right-3 bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
-                      {publicacion.categoria || 'General'}
-                    </div>
-                  </Link>
-                  <div className="p-5 flex-grow flex flex-col">
-                    <Link to={`/Detalle/${publicacion.id}`}>
-                      <h3 className="text-xl font-bold text-gray-800 hover:text-cyan-600 transition">
-                        {publicacion.titulo}
-                      </h3>
-                    </Link>
-                    <div className="flex items-center text-gray-500 text-sm mt-2 mb-3">
-                      <FaCalendarAlt className="mr-1" size={14} />
-                      <span>{new Date(publicacion.fecha || Date.now()).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-gray-600 mt-2 flex-grow">
-                      {publicacion.descripcion?.length > 100
-                        ? publicacion.descripcion.slice(0, 100) + '...'
-                        : publicacion.descripcion}
-                    </p>
-                    <Link
-                      to={`/Detalle/${publicacion.id}`}
-                      className="mt-4 text-cyan-600 hover:text-cyan-700 font-semibold inline-flex items-center"
-                    >
-                      Ver detalles
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                  </div>
-                </motion.div>
-              ))}
+          ) : publicaciones.length === 0 ? (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+                style={{ background: 'rgba(49,194,219,0.08)' }}>
+                <Search size={32} style={{ color: '#31C2DB' }} />
+              </div>
+              <p className="text-slate-600 text-lg font-bold">Sin resultados</p>
+              <p className="text-slate-400 text-sm font-medium mt-1">Intenta con otros filtros o búsqueda</p>
+              <button onClick={resetAll}
+                className="mt-5 text-xs font-black uppercase tracking-widest hover:underline"
+                style={{ color: '#31C2DB' }}>
+                Limpiar filtros
+              </button>
             </motion.div>
+          ) : (
+            <>
+              <motion.div layout
+                className={`grid gap-5 ${sidebarOpen
+                  ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                <AnimatePresence>
+                  {publicaciones.map(pub => <PubCard key={pub.id} pub={pub} />)}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Loader infinito */}
+              <div ref={loaderRef} className="flex justify-center mt-8 h-16 items-center">
+                {loadingMore && (
+                  <div className="flex items-center gap-3 text-sm font-bold text-slate-400">
+                    <div className="w-6 h-6 border-3 border-t-[#31C2DB] rounded-full animate-spin"
+                      style={{ border: '3px solid rgba(49,194,219,0.15)', borderTopColor: '#31C2DB' }} />
+                    Cargando más...
+                  </div>
+                )}
+                {!hasMore && publicaciones.length > 0 && (
+                  <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
+                    ✓ Todos los equipos cargados
+                  </p>
+                )}
+              </div>
+            </>
           )}
         </div>
-      </section>
-
-      {/* Sección informativa sin CTA redundante */}
-      <section className="bg-gradient-to-r from-cyan-50 to-blue-50 py-10 px-6 mt-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm p-8 flex flex-col md:flex-row items-center gap-8">
-            <div className="md:w-2/3">
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">Sobre ReUseTech</h2>
-              <p className="text-gray-600 mb-4">
-                Somos una plataforma dedicada a promover la economía circular en el sector tecnológico. 
-                Facilitamos la reutilización de dispositivos electrónicos para reducir el desperdicio y 
-                el impacto ambiental de la tecnología.
-              </p>
-              <div className="flex flex-wrap gap-4 mt-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-green-500 text-xl"></span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">Reducción de desechos</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <span className="text-blue-500 text-xl"></span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">Ahorro económico</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <span className="text-purple-500 text-xl"></span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">Comunidad colaborativa</span>
-                </div>
-              </div>
-            </div>
-            <div className="md:w-1/3 flex justify-center">
-              <div className="w-64 h-64 bg-cyan-100 rounded-full flex items-center justify-center">
-                <span className="text-5xl"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 };

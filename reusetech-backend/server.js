@@ -8,7 +8,11 @@ const fs = require('fs');
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const chatbotRoute = require('./chatbotRoute');
+const diagnosticoRoute = require('./diagnosticoRoute');
+const visionRoute = require('./visionRoute');
 
+const { registrarEvento } = require('./influx');
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
@@ -31,6 +35,9 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(chatbotRoute);
+app.use(diagnosticoRoute);
+app.use(visionRoute);
 
 // REGISTRO
 app.post('/api/register', async (req, res) => {
@@ -43,6 +50,9 @@ app.post('/api/register', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [nombre, apellidos, email, hashedPassword, rol]
     );
+   // 📊 Enviar evento a InfluxDB
+    registrarEvento('registro', { rol: rol || 'usuario' }, { count: 1 });
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error de registro:', error);
@@ -72,14 +82,69 @@ app.post('/api/login', async (req, res) => {
     //  En este punto la contraseña es correcta, puedes generar un token si deseas
     // const token = jwt.sign({ id: user.id, email: user.email }, 'secreto');
 
-    res.json({ success: true, user }); // puedes incluir token si usas auth
+    // 📊 Enviar evento a InfluxDB
+    registrarEvento('login', { rol: user.rol || 'usuario' }, { count: 1, user_id: user.id });
+
+    res.json({ success: true, user });
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({ success: false, message: 'Error en el servidor' });
   }
 });
 
-
+const requireAdmin = async (req, res, next) => {
+  const userId = req.headers['x-user-id'];
+  if (!userId) return res.status(401).json({ message: 'No autorizado' });
+  try {
+    const { rows } = await pool.query('SELECT rol FROM usuarios WHERE id = $1', [userId]);
+    if (!rows[0] || rows[0].rol !== 'admin') return res.status(403).json({ message: 'Acceso denegado' });
+    next();
+  } catch { res.status(500).json({ message: 'Error de autenticación' }); }
+};
+ 
+// ── GET todos los usuarios ────────────────────────────────────────────────────
+app.get('/api/usuarios', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, nombre, apellidos, email, rol, activo
+       FROM usuarios
+       ORDER BY id DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Error al obtener usuarios:', err);
+    res.status(500).json({ message: 'Error al obtener usuarios' });
+  }
+});
+ 
+// ── PATCH usuario — bloquear/activar ─────────────────────────────────────────
+app.patch('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  const { activo } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE usuarios SET activo = $1 WHERE id = $2 RETURNING id, nombre, activo`,
+      [activo, id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Usuario no encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error al actualizar usuario:', err);
+    res.status(500).json({ message: 'Error al actualizar usuario' });
+  }
+});
+ 
+// ── DELETE usuario ────────────────────────────────────────────────────────────
+app.delete('/api/usuarios/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+    res.json({ message: 'Usuario eliminado' });
+  } catch (err) {
+    console.error('Error al eliminar usuario:', err);
+    res.status(500).json({ message: 'Error al eliminar usuario' });
+  }
+});
 
 // Configuración de almacenamiento de imágenes
 const storage = multer.diskStorage({
@@ -91,6 +156,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Ruta para manejar la publicación
+// Ruta para manejar la publicación
 app.post('/api/publicaciones', upload.single('foto'), async (req, res) => {
   try {
     const { titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, autor_id } = req.body;
@@ -100,9 +166,16 @@ app.post('/api/publicaciones', upload.single('foto'), async (req, res) => {
     INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`;
   
-  const values = [titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id];
+    const values = [titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id];
   
     const result = await pool.query(query, values);
+
+    // 📊 Enviar evento a InfluxDB
+    registrarEvento('publicacion', {
+      categoria: categoria || 'sin_categoria',
+      estado: estado || 'sin_estado',
+      ubicacion: ubicacion || 'sin_ubicacion'
+    }, { count: 1, autor_id: parseInt(autor_id) || 0 });
 
     res.status(201).json({ message: 'Publicación creada con éxito', data: result.rows[0] });
   } catch (error) {
@@ -111,6 +184,38 @@ app.post('/api/publicaciones', upload.single('foto'), async (req, res) => {
   }
 });
 
+app.patch('/api/publicaciones/:id', async (req, res) => {
+  const { id } = req.params;
+  const { visible } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE publicaciones SET visible = $1 WHERE id = $2 RETURNING id, titulo, visible`,
+      [visible, id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Publicación no encontrada' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Error al actualizar publicación:', err);
+    res.status(500).json({ message: 'Error al actualizar publicación' });
+  }
+});
+
+app.delete('/api/publicaciones/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Obtener el nombre de la foto antes de borrar
+    const { rows } = await pool.query('SELECT foto FROM publicaciones WHERE id = $1', [id]);
+    if (rows[0]?.foto) {
+      const filePath = path.join('uploads', rows[0].foto);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // borra imagen del disco
+    }
+    await pool.query('DELETE FROM publicaciones WHERE id = $1', [id]);
+    res.json({ message: 'Publicación eliminada' });
+  } catch (err) {
+    console.error('Error al eliminar publicación:', err);
+    res.status(500).json({ message: 'Error al eliminar publicación' });
+  }
+});
 
 app.post('/api/mensajes', async (req, res) => {
   const { remitente_id, destinatario_id, publicacion_id, contenido } = req.body;
@@ -119,6 +224,10 @@ app.post('/api/mensajes', async (req, res) => {
                    VALUES ($1, $2, $3, $4) RETURNING *`;
     const values = [remitente_id, destinatario_id, publicacion_id, contenido];
     const result = await pool.query(query, values);
+
+    // 📊 Enviar evento a InfluxDB
+    registrarEvento('mensaje', { tipo: 'enviado' }, { count: 1, publicacion_id: parseInt(publicacion_id) || 0 });
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error al enviar mensaje:', error);
@@ -151,44 +260,132 @@ app.get('/api/mensajes/:publicacion_id/:user1/:user2', async (req, res) => {
 app.use('/uploads', express.static('uploads'));
 
 app.get('/api/publicaciones', async (req, res) => {
-  const { page = 1, limit = 6, categoria, estado, ubicacion } = req.query;
-
-  let baseQuery = `SELECT * FROM publicaciones`;
-  let filters = [];
-  let values = [];
-
-  if (categoria) {
-    values.push(`%${categoria}%`);
-    filters.push(`categoria ILIKE $${values.length}`);
-  }
-  if (estado) {
-    values.push(`%${estado}%`);
-    filters.push(`estado ILIKE $${values.length}`);
-  }
-  if (ubicacion) {
-    values.push(`%${ubicacion}%`);
-    filters.push(`ubicacion ILIKE $${values.length}`);
-  }
-
-  if (filters.length > 0) {
-    baseQuery += ` WHERE ${filters.join(" AND ")}`;
-  }
-
-  const offset = (parseInt(page) - 1) * parseInt(limit);
-  baseQuery += ` ORDER BY id DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
-  values.push(limit, offset);
-
   try {
-    const result = await pool.query(baseQuery, values);
-    res.status(200).json(result.rows);
+    const {
+      q        = '',
+      orden    = 'reciente',
+      page     = '1',
+      limit    = '12',
+    } = req.query;
+ 
+    // Arrays de filtros multi-valor (axios serializa arrays como param repetido)
+    const categorias  = [].concat(req.query.categoria  || []).filter(Boolean);
+    const estados     = [].concat(req.query.estado     || []).filter(Boolean);
+    const ubicaciones = [].concat(req.query.ubicacion  || []).filter(Boolean);
+ 
+    const pageNum  = Math.max(1, parseInt(page,  10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 12)); // máx 50 por seguridad
+    const offset   = (pageNum - 1) * limitNum;
+ 
+    // ── Construcción dinámica de la query ────────────────────────────────────
+    const values = [];
+    const filters = [];
+ 
+    // Full-text search (PostgreSQL ts_vector)
+    // Busca en titulo, descripcion y marcaoModelo con operador de prefijo (prefix match)
+    if (q.trim()) {
+      // plainto_tsquery es tolerante: no explota con caracteres especiales
+      // Usamos ILIKE como fallback simple y compatible si no tienes tsvector
+      values.push(`%${q.trim()}%`);
+      const idx = values.length;
+      filters.push(`(
+        titulo           ILIKE $${idx}
+        OR descripcion   ILIKE $${idx}
+        OR marcaoModelo  ILIKE $${idx}
+        OR nombredeldispositivo ILIKE $${idx}
+      )`);
+    }
+ 
+    // Filtro categoría (OR entre valores seleccionados)
+    if (categorias.length > 0) {
+      const placeholders = categorias.map(c => {
+        values.push(`%${c}%`);
+        return `categoria ILIKE $${values.length}`;
+      });
+      filters.push(`(${placeholders.join(' OR ')})`);
+    }
+ 
+    // Filtro estado
+    if (estados.length > 0) {
+      const placeholders = estados.map(e => {
+        values.push(`%${e}%`);
+        return `estado ILIKE $${values.length}`;
+      });
+      filters.push(`(${placeholders.join(' OR ')})`);
+    }
+ 
+    // Filtro ubicación
+    if (ubicaciones.length > 0) {
+      const placeholders = ubicaciones.map(u => {
+        values.push(`%${u}%`);
+        return `ubicacion ILIKE $${values.length}`;
+      });
+      filters.push(`(${placeholders.join(' OR ')})`);
+    }
+ 
+    const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+ 
+    // ── Ordenamiento ─────────────────────────────────────────────────────────
+    const orderMap = {
+      reciente: 'fecha DESC',
+      antiguo:  'fecha ASC',
+      az:       'titulo ASC',
+      za:       'titulo DESC',
+    };
+    const orderSQL = orderMap[orden] ?? 'fecha DESC';
+ 
+    // ── COUNT total (para paginación del frontend) ────────────────────────────
+    const countQuery  = `SELECT COUNT(*) FROM publicaciones ${whereClause}`;
+    const countResult = await pool.query(countQuery, values);
+    const total       = parseInt(countResult.rows[0].count, 10);
+ 
+    // ── Datos paginados ───────────────────────────────────────────────────────
+    const dataQuery = `
+      SELECT
+        id, titulo, descripcion, categoria, estado, ubicacion,
+        foto, fecha, marcaoModelo, nombredeldispositivo, contacto, autor_id
+      FROM publicaciones
+      ${whereClause}
+      ORDER BY ${orderSQL}
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    `;
+    values.push(limitNum, offset);
+ 
+    const dataResult = await pool.query(dataQuery, values);
+ 
+    res.status(200).json({
+      rows:  dataResult.rows,
+      total,
+      page:  pageNum,
+      limit: limitNum,
+      pages: Math.ceil(total / limitNum),
+    });
+ 
   } catch (error) {
-    console.error('Error con paginación:', error);
-    res.status(500).json({ message: 'Error al obtener publicaciones paginadas' });
+    console.error('Error en GET /api/publicaciones:', error);
+    res.status(500).json({ message: 'Error al obtener publicaciones' });
   }
 });
 
-
-
+app.get('/api/publicaciones/facets', async (req, res) => {
+  try {
+    const [categorias, estados, ubicaciones] = await Promise.all([
+      pool.query(`SELECT categoria AS value, COUNT(*) AS count FROM publicaciones WHERE categoria IS NOT NULL GROUP BY categoria ORDER BY count DESC`),
+      pool.query(`SELECT estado    AS value, COUNT(*) AS count FROM publicaciones WHERE estado    IS NOT NULL GROUP BY estado    ORDER BY count DESC`),
+      pool.query(`SELECT ubicacion AS value, COUNT(*) AS count FROM publicaciones WHERE ubicacion IS NOT NULL GROUP BY ubicacion ORDER BY count DESC LIMIT 20`),
+    ]);
+ 
+    res.json({
+      categorias:  categorias.rows,
+      estados:     estados.rows,
+      ubicaciones: ubicaciones.rows,
+    });
+  } catch (err) {
+    console.error('Error en /api/publicaciones/facets:', err);
+    res.status(500).json({ message: 'Error al obtener facetas' });
+  }
+});
+ 
 
 
 /// Ruta para obtener una publicación por su ID
@@ -284,12 +481,16 @@ app.post('/api/chatbot', async (req, res) => {
     const response = await result.response;
     const text = await response.text();
 
+    // 📊 Enviar evento a InfluxDB
+    registrarEvento('chatbot', { estado: 'exitoso' }, { count: 1, longitud_mensaje: mensaje.length });
+
     res.json({ respuesta: text });
   } catch (error) {
     console.error(" Error con Gemini:", error.message || error);
     res.status(500).json({ respuesta: "Hubo un error al obtener la respuesta de la IA." });
   }
 });
+
 
 
 // Route to get publications by user ID

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { FaCalendarAlt, FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { 
+  Calendar, Edit3, Trash2, Plus, 
+  Smartphone, ChevronRight, Info, 
+  AlertCircle, LayoutGrid, Image as ImageIcon
+} from 'lucide-react';
 
 const MisPublicaciones = () => {
   const [publicaciones, setPublicaciones] = useState([]);
@@ -13,208 +17,195 @@ const MisPublicaciones = () => {
     const fetchMisPublicaciones = async () => {
       setIsLoading(true);
       try {
-        // Assuming there's a way to get the current user's ID
-        // In a real app, this would come from authentication context
-        const userId = localStorage.getItem('userId') || '1'; // Fallback to '1' for demo
+        const userId = localStorage.getItem('userId') || '1'; 
         const response = await axios.get(`http://localhost:5000/api/publicaciones/usuario/${userId}`);
         setPublicaciones(response.data);
         setError(null);
       } catch (error) {
-        console.error('Error al obtener mis publicaciones:', error);
-        setError('No se pudieron cargar las publicaciones. Por favor intenta más tarde.');
+        console.error('Error:', error);
+        setError('No pudimos cargar tus publicaciones en este momento.');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchMisPublicaciones();
   }, []);
 
   const handleDeletePublicacion = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar esta publicación?')) {
+    if (window.confirm('¿Deseas eliminar esta publicación permanentemente?')) {
       try {
         await axios.delete(`http://localhost:5000/api/publicaciones/${id}`);
         setPublicaciones(publicaciones.filter(pub => pub.id !== id));
       } catch (error) {
-        console.error('Error al eliminar la publicación:', error);
-        alert('No se pudo eliminar la publicación. Por favor intenta más tarde.');
+        alert('Error al eliminar.');
       }
-    }
-  };
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { type: 'spring', stiffness: 100 }
     }
   };
 
   return (
-    <div className="bg-white min-h-screen">
-      {/* Header */}
-      <div className="bg-gradient-to-b from-gray-50 to-white py-8 px-6 border-b border-gray-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Mis Publicaciones</h1>
-              <p className="text-gray-600 mt-1">Gestiona los dispositivos que has publicado</p>
+    <div className="min-h-screen bg-[#f4f7f9] font-['Plus_Jakarta_Sans'] pb-20">
+      
+      {/* HEADER DE GESTIÓN */}
+      <div className="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-[#5bc0de]/10 px-6 py-8">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1 justify-center md:justify-start">
+              <LayoutGrid size={14} className="text-[#5bc0de]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#5bc0de]">Inventario Personal</span>
             </div>
-            <Link 
-              to="/publicar" 
-              className="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
-            >
-              <FaPlus /> Nueva publicación
-            </Link>
+            <h1 className="text-4xl font-[900] text-slate-900 tracking-tighter text-center md:text-left">Mis Publicaciones</h1>
           </div>
+          
+          <Link 
+            to="/form" 
+            className="group bg-[#5bc0de] hover:bg-[#46a6c2] text-white px-8 py-4 rounded-[2rem] flex items-center gap-3 transition-all shadow-lg shadow-[#5bc0de]/30 font-black uppercase tracking-widest text-xs"
+          >
+            <Plus size={18} /> Nueva publicación
+          </Link>
         </div>
       </div>
 
-      {/* Publicaciones */}
-      <section className="py-10 px-6">
-        <div className="max-w-6xl mx-auto">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+      <div className="max-w-6xl mx-auto px-6 pt-10">
+        
+        {/* ESTADO: CARGANDO */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-[450px] bg-white/50 rounded-[2.5rem] animate-pulse border border-white" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 p-12 rounded-[3rem] text-center border border-red-100 max-w-2xl mx-auto">
+            <AlertCircle className="mx-auto text-red-400 mb-4" size={48} />
+            <p className="text-red-900 font-black text-lg">{error}</p>
+            <button onClick={() => window.location.reload()} className="mt-4 text-[#5bc0de] font-bold underline">Reintentar conexión</button>
+          </div>
+        ) : publicaciones.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 shadow-xl shadow-slate-200/50"
+          >
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <ImageIcon size={40} className="text-slate-300" />
             </div>
-          ) : error ? (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-8 rounded-lg text-center">
-              <p>{error}</p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="mt-4 text-white bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition"
-              >
-                Intentar nuevamente
-              </button>
-            </div>
-          ) : publicaciones.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 rounded-lg">
-              <h3 className="text-gray-800 text-xl font-semibold mb-2">Aún no tienes publicaciones</h3>
-              <p className="text-gray-500 mb-6">Comienza publicando tu primer dispositivo para reutilizar</p>
-              <Link 
-                to="/from" 
-                className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-lg inline-flex items-center gap-2 transition"
-              >
-                <FaPlus /> Crear publicación
-              </Link>
-            </div>
-          ) : (
-            <motion.div
-              className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+            <h3 className="text-2xl font-black text-slate-800 mb-2">Tu galería está vacía</h3>
+            <p className="text-slate-400 font-medium mb-8">Parece que aún no has subido ningún equipo para reciclar.</p>
+            <Link 
+              to="/publicar" 
+              className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-[#5bc0de] transition-colors shadow-xl shadow-slate-200"
             >
-              {publicaciones.map((publicacion) => (
-                <motion.div
-                  key={publicacion.id}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 overflow-hidden border border-gray-100 flex flex-col h-full"
-                  variants={itemVariants}
-                >
-                  <div className="relative">
-                    {publicacion.foto ? (
-                      <img
-                        src={`http://localhost:5000/uploads/${publicacion.foto}`}
-                        alt="Imagen de publicación"
-                        className="w-full h-48 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400">Sin imagen</span>
-                      </div>
-                    )}
-                    <div className="absolute top-3 right-3 bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">
-                      {publicacion.categoria || 'General'}
+              Empezar ahora
+            </Link>
+          </motion.div>
+        ) : (
+          /* GRILLA DE PUBLICACIONES */
+          <motion.div 
+            layout
+            className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+          >
+            {publicaciones.map((pub) => (
+              <motion.div
+                key={pub.id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="group bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/60 border border-white overflow-hidden hover:shadow-2xl hover:shadow-[#5bc0de]/10 transition-all flex flex-col h-full"
+              >
+                {/* IMAGEN CON BADGE */}
+                <div className="relative h-56 overflow-hidden">
+                  {pub.foto ? (
+                    <img
+                      src={`http://localhost:5000/uploads/${pub.foto}`}
+                      alt={pub.titulo}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300">
+                      <ImageIcon size={48} />
                     </div>
+                  )}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-[#5bc0de] text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-sm">
+                    {pub.categoria || 'Tech'}
                   </div>
-                  
-                  <div className="p-5 flex-grow flex flex-col">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                      {publicacion.titulo}
+                </div>
+                
+                <div className="p-7 flex-grow flex flex-col">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-xl font-[900] text-slate-900 leading-tight group-hover:text-[#5bc0de] transition-colors truncate pr-2">
+                      {pub.titulo}
                     </h3>
-                    <div className="flex items-center text-gray-500 text-sm mb-3">
-                      <FaCalendarAlt className="mr-1" size={14} />
-                      <span>{new Date(publicacion.fecha || Date.now()).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-gray-600 flex-grow">
-                      {publicacion.descripcion?.length > 100
-                        ? publicacion.descripcion.slice(0, 100) + '...'
-                        : publicacion.descripcion}
-                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-4">
+                    <Calendar size={14} className="text-[#5bc0de]" />
+                    <span>{new Date(pub.fecha || Date.now()).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+
+                  <p className="text-slate-500 text-sm font-medium leading-relaxed line-clamp-2 mb-6">
+                    {pub.descripcion}
+                  </p>
+                  
+                  {/* ACCIONES */}
+                  <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-50">
+                    <Link
+                      to={`/Detalle/${pub.id}`}
+                      className="text-[#5bc0de] hover:text-slate-900 font-black text-[11px] uppercase tracking-widest flex items-center gap-1 transition-colors"
+                    >
+                      Detalles <ChevronRight size={14} />
+                    </Link>
                     
-                    <div className="mt-4 flex items-center justify-between border-t pt-4">
+                    <div className="flex gap-2">
                       <Link
-                        to={`/Detalle/${publicacion.id}`}
-                        className="text-cyan-600 hover:text-cyan-700 font-semibold"
+                        to={`/editar/${pub.id}`}
+                        className="p-3 bg-slate-50 text-slate-400 hover:bg-cyan-50 hover:text-[#5bc0de] rounded-xl transition-all"
+                        title="Editar"
                       >
-                        Ver detalles
+                        <Edit3 size={18} />
                       </Link>
-                      <div className="flex gap-2">
-                        <Link
-                          to={`/editar/${publicacion.id}`}
-                          className="text-gray-600 hover:text-cyan-600 transition"
-                        >
-                          <FaEdit size={18} />
-                        </Link>
-                        <button
-                          onClick={() => handleDeletePublicacion(publicacion.id)}
-                          className="text-gray-600 hover:text-red-600 transition"
-                        >
-                          <FaTrash size={18} />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleDeletePublicacion(pub.id)}
+                        className="p-3 bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </div>
-      </section>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
-      {/* Sección de ayuda */}
-      <section className="bg-gray-50 py-10 px-6 mt-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Consejos para tus publicaciones</h2>
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="p-4 border border-gray-100 rounded-lg bg-gray-50">
-                <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center mb-3">
-                  <span className="text-cyan-500 text-xl">1</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-2">Fotos de calidad</h3>
-                <p className="text-gray-600 text-sm">Incluye fotos claras y bien iluminadas del dispositivo desde varios ángulos.</p>
+        {/* CONSEJOS DE REUSETECH (REDISEÑADO) */}
+        <section className="mt-20">
+          <div className="bg-slate-900 rounded-[3rem] p-10 md:p-14 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#5bc0de] opacity-5 rounded-full blur-[80px]" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-8">
+                <Info className="text-[#5bc0de]" size={28} />
+                <h2 className="text-2xl font-black text-white tracking-tight">Optimiza tu impacto</h2>
               </div>
-              <div className="p-4 border border-gray-100 rounded-lg bg-gray-50">
-                <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center mb-3">
-                  <span className="text-cyan-500 text-xl">2</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-2">Descripción detallada</h3>
-                <p className="text-gray-600 text-sm">Menciona todas las especificaciones técnicas y el estado actual del dispositivo.</p>
-              </div>
-              <div className="p-4 border border-gray-100 rounded-lg bg-gray-50">
-                <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center mb-3">
-                  <span className="text-cyan-500 text-xl">3</span>
-                </div>
-                <h3 className="font-semibold text-gray-800 mb-2">Categoría correcta</h3>
-                <p className="text-gray-600 text-sm">Asegúrate de elegir la categoría adecuada para que tu publicación llegue a las personas interesadas.</p>
+
+              <div className="grid gap-8 md:grid-cols-3">
+                {[
+                  { n: "01", t: "Fotos Claras", d: "Usa luz natural para que los detalles técnicos se vean perfectos." },
+                  { n: "02", t: "Honestidad", d: "Describe el estado real de la batería y pantalla para generar confianza." },
+                  { n: "03", t: "Categoriza", d: "Ubicar bien tu equipo ayuda a que los recicladores lo encuentren rápido." }
+                ].map((item, idx) => (
+                  <div key={idx} className="group">
+                    <span className="block text-4xl font-black text-white/10 group-hover:text-[#5bc0de]/20 transition-colors mb-2">{item.n}</span>
+                    <h3 className="font-bold text-white mb-2">{item.t}</h3>
+                    <p className="text-slate-400 text-sm leading-relaxed">{item.d}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </div>
   );
 };

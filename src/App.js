@@ -10,6 +10,7 @@ import MisPublicaciones from './components/MisPublicaciones';
 import BandejaEntrada from './components/BandejaEntrada';
 import ChatIA from './components/ChatIA';
 import Busqueda from './components/Busqueda'; 
+import AdminPanel from './components/AdminPanel';
 const Landing = lazy(() => import('./components/Landing'));
 const Login = lazy(() => import('./components/Login'));
 const Register = lazy(() => import('./components/Register'));
@@ -18,8 +19,8 @@ const FormPage = lazy(() => import('./components/FormPage'));
 const DetallePublicacion = lazy(() => import('./components/DetallePublicacion'));
 const ChatPrivado = lazy(() => import('./components/ChatPrivado'));
 const DiagnosticoInteligente = lazy(() => import('./components/DiagnosticoInteligente'));
-
-
+const DiagnosticoSistemas = lazy(() => import('./components/DiagnosticoSistemas'));
+const ReconocimientoComponentes = lazy(() => import('./components/ReconocimientoComponentes'));
 
 
 function App() {
@@ -42,7 +43,9 @@ function App() {
         <Route path="/soporte" element={<ChatIA />} />
         <Route path="/buscar" element={<Busqueda />} />
         <Route path="/diagnostico" element={<DiagnosticoInteligente />} />
-
+        <Route path="/diagnostico-sistemas" element={<DiagnosticoSistemas />} />
+        <Route path="/escaner" element={<ReconocimientoComponentes />} />
+        <Route path="/admin" element={<AdminPanel />} />
 
       </Routes>
       </Suspense>
