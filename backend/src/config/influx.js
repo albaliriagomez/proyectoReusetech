@@ -49,6 +49,25 @@ function registrarEvento(measurement, tags = {}, fields = { count: 1 }) {
   }
 }
 
+function registrarDonacion({ dispositivoId, categoria, donante, receptor, co2Kg, arboles }) {
+  registrarEvento(
+    'donacion',                          // ← measurement nuevo
+    {
+      categoria: categoria || 'sin_categoria',
+      donante:   donante   || 'desconocido',
+      receptor:  receptor  || 'desconocido',
+    },
+    {
+      co2_kg:  co2Kg   || 0,            // ← valor real, no * 20
+      arboles: arboles || 0,
+      count:   1,
+    }
+  );
+}
+
+module.exports = { registrarEvento, registrarDonacion };
+
+
 // ─── Cierre limpio al apagar el servidor ──────────────────────────────
 process.on('SIGINT', async () => {
   try {

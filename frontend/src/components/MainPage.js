@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, SlidersHorizontal, X, ChevronDown, ChevronRight,
   ArrowUpRight, Calendar, Cpu, Package, TrendingUp, Users,
   Sparkles, Leaf, Globe, Zap, Check, RotateCcw, ArrowUpDown,
-  SortAsc, SortDesc, MapPin, Tag, Activity, Filter
+  SortAsc, SortDesc, MapPin, Tag, Activity, Filter,
+  Smartphone, Laptop, Tablet, Box 
 } from 'lucide-react';
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
@@ -26,9 +27,14 @@ const ESTADOS = [
   { value: 'Reciclaje',   color: '#ef4444', dot: true },
 ];
 
-const UBICACIONES = [
-  'Cochabamba', 'Cochabamba-cercado', 'Quillacollo', 'Sacaba',
-  'La Paz', 'Santa Cruz', 'Oruro', 'Potosí',
+const opcionesUbicacion = [
+  'Cochabamba',
+  'Cochabamba-cercado',
+  'Quillacollo',
+  'Sacaba',
+  'Colcapirhua',
+  'Tiquipaya',
+  'Vinto',
 ];
 
 const ORDENAR = [
@@ -114,17 +120,37 @@ const SidebarSection = ({ title, icon, children, defaultOpen = true }) => {
 };
 
 // ─── CARD DE PUBLICACIÓN ──────────────────────────────────────────────────────
-const PubCard = ({ pub }) => (
-  <motion.div
-    layout
-    initial={{ opacity: 0, y: 16 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, scale: 0.95 }}
-    whileHover={{ y: -5 }}
-    className="bg-white rounded-[1.75rem] overflow-hidden border border-slate-100 shadow-sm group"
-    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 20px 40px rgba(49,194,219,0.10)')}
-    onMouseLeave={e => (e.currentTarget.style.boxShadow = '')}
-  >
+const PubCard = ({ pub }) => {
+  const navigate = useNavigate();
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  })();
+
+  const handleActionClick = (e) => {
+    e.preventDefault();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    const concepto = user.rol === 'Gestor_RAEE' ? 'Coordinación de Retiro de RAEE' : 'Solicitar Donación';
+    navigate(`/chat/${user.id}/${pub.autor_id}/${pub.id}?concepto=${encodeURIComponent(concepto)}`);
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ y: -5 }}
+      className="bg-white rounded-[1.75rem] overflow-hidden border border-slate-100 shadow-sm group"
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 20px 40px rgba(49,194,219,0.10)')}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = '')}
+    >
     <Link to={`/Detalle/${pub.id}`} className="block relative overflow-hidden" style={{ height: 200 }}>
       {pub.foto ? (
         <img
@@ -198,7 +224,9 @@ const PubCard = ({ pub }) => (
           className="flex items-center gap-1 text-xs font-[900] text-slate-800 uppercase tracking-tight group-hover:gap-2 transition-all">
           Ver más <ChevronRight size={14} style={{ color: '#31C2DB' }} />
         </Link>
-        <button className="p-2 rounded-full transition-colors"
+        <button 
+          onClick={handleActionClick}
+          className="p-2 rounded-full transition-colors"
           style={{ background: 'rgba(49,194,219,0.06)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(49,194,219,0.15)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(49,194,219,0.06)')}>
@@ -207,7 +235,8 @@ const PubCard = ({ pub }) => (
       </div>
     </div>
   </motion.div>
-);
+  );
+};
 
 // ─── SKELETON CARD ────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
@@ -224,6 +253,7 @@ const SkeletonCard = () => (
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 const MainPage = () => {
+  const navigate = useNavigate();
   // Estados de filtro
   const [busqueda,         setBusqueda]         = useState('');
   const [categoriasActivas, setCategoriasActivas] = useState([]);
@@ -232,6 +262,123 @@ const MainPage = () => {
   const [orden,             setOrden]            = useState('reciente');
   const [sidebarOpen,       setSidebarOpen]      = useState(true);
   const [sortOpen,          setSortOpen]         = useState(false);
+  const [mobileDrawerOpen,  setMobileDrawerOpen] = useState(false);
+
+  const renderFiltersContent = () => (
+    <>
+      {/* Header sidebar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={16} style={{ color: '#31C2DB' }} />
+          <span className="font-[900] text-slate-800 text-sm">Filtros</span>
+          {activeCount > 0 && (
+            <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white bg-[#31C2DB]">
+              {activeCount}
+            </span>
+          )}
+        </div>
+        {activeCount > 0 && (
+          <button onClick={resetAll}
+            className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-red-400 transition-colors">
+            <RotateCcw size={12} /> Limpiar
+          </button>
+        )}
+      </div>
+
+      {/* Categorías */}
+      <SidebarSection title="Categoría" icon={<Tag size={12}/>}>
+        <div className="space-y-1.5">
+          {[
+            { label: "Teléfonos y Accesorios", value: "Teléfonos y Accesorios", icon: <Smartphone size={14} /> },
+            { label: "Computadoras y Accesorios", value: "Computadoras y Accesorios", icon: <Laptop size={14} /> },
+            { label: "Tablets y Accesorios", value: "Tablets y Accesorios", icon: <Tablet size={14} /> },
+            { label: "Otros", value: "Otros", icon: <Box size={14} /> }
+          ].map(cat => {
+            const active = categoriasActivas.includes(cat.value);
+            return (
+              <button 
+                key={cat.value} 
+                onClick={() => toggleArr(categoriasActivas, setCategoriasActivas, cat.value)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={active
+                  ? { background: 'rgba(49,194,219,0.10)', color: '#31C2DB', border: '1.5px solid rgba(49,194,219,0.25)' }
+                  : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`flex-shrink-0 ${active ? 'text-[#31C2DB]' : 'text-slate-400'}`}>
+                    {cat.icon}
+                  </span>
+                  <span className="text-xs font-bold text-left">{cat.label}</span>
+                </div>
+                {active && <Check size={13} style={{ color: '#31C2DB' }} />}
+              </button>
+            );
+          })}
+        </div>
+      </SidebarSection>
+
+      {/* Estado */}
+      <SidebarSection title="Estado" icon={<Activity size={12}/>}>
+        <div className="space-y-1.5">
+          {ESTADOS.map(est => {
+            const active = estadosActivos.includes(est.value);
+            return (
+              <button key={est.value} onClick={() => toggleArr(estadosActivos, setEstadosActivos, est.value)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                style={active
+                  ? { background: `${est.color}15`, color: est.color, border: `1.5px solid ${est.color}40` }
+                  : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: est.color }} />
+                  {est.value}
+                </div>
+                {active && <Check size={13} style={{ color: est.color }} />}
+              </button>
+            );
+          })}
+        </div>
+      </SidebarSection>
+
+      {/* Ubicación */}
+      <SidebarSection title="Ubicación" icon={<MapPin size={12}/>}>
+        <div className="space-y-1.5">
+          {["Cochabamba", "Cochabamba-cercado", "Quillacollo", "Sacaba", "Colcapirhua", "Tiquipaya", "Vinto"].map((loc) => {
+            const active = ubicacionesActivas.includes(loc);
+            const themeColor = "#008080"; 
+
+            return (
+              <button 
+                key={loc} 
+                onClick={() => toggleArr(ubicacionesActivas, setUbicacionesActivas, loc)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
+                style={active
+                  ? { background: `${themeColor}15`, color: themeColor, border: `1.5px solid ${themeColor}40` }
+                  : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}
+              >
+                <div className="flex items-center gap-2 text-left">
+                  <span 
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+                    style={{ background: active ? themeColor : '#cbd5e1' }} 
+                  />
+                  {loc}
+                </div>
+                {active && <Check size={13} style={{ color: themeColor }} />}
+              </button>
+            );
+          })}
+        </div>
+      </SidebarSection>
+
+      {/* CTA footer sidebar */}
+      <div className="mt-4 pt-4 border-t border-slate-50">
+        <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(49,194,219,0.06)' }}>
+          <Leaf size={18} className="mx-auto mb-2" style={{ color: '#31C2DB' }} />
+          <p className="text-xs font-bold text-slate-600">Economía Circular</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Cada equipo cuenta</p>
+        </div>
+      </div>
+    </>
+  );
 
   // Paginación / datos
   const [publicaciones, setPublicaciones] = useState([]);
@@ -326,6 +473,24 @@ const MainPage = () => {
     ...ubicacionesActivas.map(u => ({ label: u, onRemove: () => toggleArr(ubicacionesActivas, setUbicacionesActivas, u) })),
   ];
 
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  })();
+
+  const equiposVisibles = publicaciones.filter(equipo => {
+    if (user && user.rol === 'Gestor_RAEE') {
+      // Las empresas de reciclaje técnico SOLO ven equipos destinados a la minería urbana
+      return equipo.estado === 'Reciclaje';
+    } else {
+      // Los usuarios particulares y las Fundaciones/Escuelas SOLO ven equipos funcionales
+      return equipo.estado === 'Buen estado' || equipo.estado === 'Usado';
+    }
+  });
+
   return (
     <div className="bg-[#f8fafc] min-h-screen font-['Plus_Jakarta_Sans']">
 
@@ -377,7 +542,7 @@ const MainPage = () => {
           {/* Stats */}
           <div className="flex items-center gap-6 pb-4 border-b border-slate-50">
             {[
-              { icon: <Package size={13} />, label: `${publicaciones.length} cargados` },
+              { icon: <Package size={13} />, label: `${equiposVisibles.length} cargados` },
               { icon: <TrendingUp size={13} />, label: 'Actualizado hoy' },
               { icon: <Users size={13} />, label: '+10k usuarios' },
             ].map((s, i) => (
@@ -392,7 +557,7 @@ const MainPage = () => {
       {/* ── LAYOUT PRINCIPAL ───────────────────────────────────── */}
       <div className="max-w-[1600px] mx-auto px-6 py-8 flex gap-8">
 
-        {/* ── SIDEBAR FILTROS ─────────────────────────────────── */}
+        {/* ── SIDEBAR FILTROS (Desktop) ───────────────────────── */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.aside
@@ -401,103 +566,12 @@ const MainPage = () => {
               animate={{ width: 300, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="flex-shrink-0 overflow-hidden"
+              className="hidden md:block flex-shrink-0 overflow-hidden"
               style={{ width: 300 }}
             >
               <div className="bg-white rounded-[2rem] border border-slate-100 p-6 sticky top-6 shadow-sm"
                 style={{ maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
-
-                {/* Header sidebar */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-2">
-                    <SlidersHorizontal size={16} style={{ color: '#31C2DB' }} />
-                    <span className="font-[900] text-slate-800 text-sm">Filtros</span>
-                    {activeCount > 0 && (
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
-                        style={{ background: '#31C2DB' }}>
-                        {activeCount}
-                      </span>
-                    )}
-                  </div>
-                  {activeCount > 0 && (
-                    <button onClick={resetAll}
-                      className="flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-red-400 transition-colors">
-                      <RotateCcw size={12} /> Limpiar
-                    </button>
-                  )}
-                </div>
-
-                {/* Categorías */}
-                <SidebarSection title="Categoría" icon={<Tag size={12}/>}>
-                  <div className="space-y-1.5">
-                    {CATEGORIAS.map(cat => {
-                      const active = categoriasActivas.includes(cat.value);
-                      return (
-                        <button key={cat.value} onClick={() => toggleArr(categoriasActivas, setCategoriasActivas, cat.value)}
-                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                          style={active
-                            ? { background: 'rgba(49,194,219,0.10)', color: '#31C2DB', border: '1.5px solid rgba(49,194,219,0.25)' }
-                            : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{cat.emoji}</span>
-                            <span className="text-xs font-bold">{cat.value}</span>
-                          </div>
-                          {active && <Check size={13} style={{ color: '#31C2DB' }} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </SidebarSection>
-
-                {/* Estado */}
-                <SidebarSection title="Estado" icon={<Activity size={12}/>}>
-                  <div className="space-y-1.5">
-                    {ESTADOS.map(est => {
-                      const active = estadosActivos.includes(est.value);
-                      return (
-                        <button key={est.value} onClick={() => toggleArr(estadosActivos, setEstadosActivos, est.value)}
-                          className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all"
-                          style={active
-                            ? { background: `${est.color}15`, color: est.color, border: `1.5px solid ${est.color}40` }
-                            : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: est.color }} />
-                            {est.value}
-                          </div>
-                          {active && <Check size={13} style={{ color: est.color }} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </SidebarSection>
-
-                {/* Ubicación */}
-                <SidebarSection title="Ubicación" icon={<MapPin size={12}/>}>
-                  <div className="space-y-1">
-                    {UBICACIONES.map(ub => {
-                      const active = ubicacionesActivas.includes(ub);
-                      return (
-                        <button key={ub} onClick={() => toggleArr(ubicacionesActivas, setUbicacionesActivas, ub)}
-                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-all"
-                          style={active
-                            ? { background: 'rgba(49,194,219,0.10)', color: '#31C2DB', border: '1.5px solid rgba(49,194,219,0.25)' }
-                            : { background: 'transparent', color: '#475569', border: '1.5px solid transparent' }}>
-                          {ub}
-                          {active && <Check size={12} style={{ color: '#31C2DB' }} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </SidebarSection>
-
-                {/* CTA footer sidebar */}
-                <div className="mt-4 pt-4 border-t border-slate-50">
-                  <div className="rounded-2xl p-4 text-center" style={{ background: 'rgba(49,194,219,0.06)' }}>
-                    <Leaf size={18} className="mx-auto mb-2" style={{ color: '#31C2DB' }} />
-                    <p className="text-xs font-bold text-slate-600">Economía Circular</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Cada equipo cuenta</p>
-                  </div>
-                </div>
+                {renderFiltersContent()}
               </div>
             </motion.aside>
           )}
@@ -527,7 +601,7 @@ const MainPage = () => {
 
               {/* Resultado count */}
               <span className="text-xs font-bold text-slate-400">
-                {loading ? '...' : `${publicaciones.length}${total ? ` de ${total.toLocaleString()}` : ''} equipos`}
+                {loading ? '...' : `${equiposVisibles.length}${total ? ` de ${total.toLocaleString()}` : ''} equipos`}
               </span>
             </div>
 
@@ -587,12 +661,10 @@ const MainPage = () => {
 
           {/* Grid */}
           {loading ? (
-            <div className={`grid gap-5 ${sidebarOpen
-              ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
-              : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
-          ) : publicaciones.length === 0 ? (
+          ) : equiposVisibles.length === 0 ? (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
               <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
@@ -609,12 +681,9 @@ const MainPage = () => {
             </motion.div>
           ) : (
             <>
-              <motion.div layout
-                className={`grid gap-5 ${sidebarOpen
-                  ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
-                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+              <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <AnimatePresence>
-                  {publicaciones.map(pub => <PubCard key={pub.id} pub={pub} />)}
+                  {equiposVisibles.map(pub => <PubCard key={pub.id} pub={pub} />)}
                 </AnimatePresence>
               </motion.div>
 
@@ -627,7 +696,7 @@ const MainPage = () => {
                     Cargando más...
                   </div>
                 )}
-                {!hasMore && publicaciones.length > 0 && (
+                {!hasMore && equiposVisibles.length > 0 && (
                   <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
                     ✓ Todos los equipos cargados
                   </p>
@@ -637,6 +706,53 @@ const MainPage = () => {
           )}
         </div>
       </div>
+
+      {/* BOTÓN FLOTANTE DE FILTROS EN MÓVIL */}
+      <button
+        onClick={() => setMobileDrawerOpen(true)}
+        className="md:hidden fixed bottom-6 right-6 z-40 bg-[#31C2DB] text-white p-4 rounded-full shadow-2xl flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all"
+        style={{ boxShadow: '0 8px 30px rgba(49,194,219,0.4)' }}
+      >
+        <Filter size={20} />
+        <span className="text-xs font-black uppercase tracking-wider">Filtros</span>
+        {activeCount > 0 && (
+          <span className="bg-white text-[#31C2DB] text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-sm">
+            {activeCount}
+          </span>
+        )}
+      </button>
+
+      {/* DRAWER DE FILTROS EN MÓVIL */}
+      <AnimatePresence>
+        {mobileDrawerOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileDrawerOpen(false)}
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 md:hidden"
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+              className="fixed inset-x-0 bottom-0 max-h-[85vh] bg-white rounded-t-[2.5rem] shadow-2xl z-50 p-6 overflow-y-auto md:hidden"
+            >
+              {/* Handle bar to pull down */}
+              <div 
+                className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6 cursor-pointer" 
+                onClick={() => setMobileDrawerOpen(false)} 
+              />
+              {renderFiltersContent()}
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

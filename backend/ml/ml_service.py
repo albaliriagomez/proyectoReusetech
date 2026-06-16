@@ -3,6 +3,7 @@ from flask_cors import CORS
 import joblib
 import numpy as np
 import os
+import json
 
 app = Flask(__name__)
 CORS(app)
@@ -15,36 +16,16 @@ model    = joblib.load(os.path.join(BASE_DIR, 'modelo_diagnostico_reusetech.pkl'
 encoders = joblib.load(os.path.join(BASE_DIR, 'encoders_diagnostico.pkl'))
 
 # Categorías de diagnóstico
-CATEGORIAS = {
-    0: {
-        "estado": "PARA RECICLAR",
-        "puntuacion": 12,
-        "color": "#DC2626",
-        "analisis": "Daños estructurales críticos detectados. El dispositivo presenta fallas múltiples que imposibilitan su reutilización funcional. Recomendamos desmantelamiento controlado para recuperación de polímeros técnicos y metales base.",
-        "recomendacion_pro": "Gestión de E-Waste certificada R2/e-Stewards para recuperación de materiales estratégicos.",
-    },
-    1: {
-        "estado": "PARA REPUESTOS",
-        "puntuacion": 35,
-        "color": "#EA580C",
-        "analisis": "Fallas críticas en subsistemas principales, pero módulos funcionales de alto valor aptos para trasplante técnico (LCD, teclados, memoria, almacenamiento).",
-        "recomendacion_pro": "Harvesting de componentes para donación técnica o reventa en mercado de repuestos OEM.",
-    },
-    2: {
-        "estado": "PARA DONAR",
-        "puntuacion": 58,
-        "color": "#2563EB",
-        "analisis": "Funcionalidad operativa estable para cargas básicas. Hardware suficiente para tareas productivas estándar pese a desgaste cosmético o batería degradada.",
-        "recomendacion_pro": "Reacondicionamiento social: limpieza, reinstalación OS, canalización a instituciones educativas o proyectos comunitarios.",
-    },
-    3: {
-        "estado": "PARA REPARAR",
-        "puntuacion": 88,
-        "color": "#16A34A",
-        "analisis": "Potencial de reuso óptimo. Arquitectura vigente con componentes funcionales. Intervención técnica estándar lo reintegrará al mercado secundario premium.",
-        "recomendacion_pro": "Refurbishing Premium: restauración completa con certificación de calidad para reventa corporativa o mercado abierto.",
-    }
-}
+
+# Cargar la definición de categorías desde el JSON suministrado por el proyecto
+categorias_path = os.path.join(BASE_DIR, 'categorias_diagnostico.json')
+if not os.path.exists(categorias_path):
+    raise FileNotFoundError(f"categorias_diagnostico.json no encontrado en {categorias_path}")
+with open(categorias_path, 'r', encoding='utf-8') as f:
+    categorias_json = json.load(f)
+
+# Convertir claves a enteros si vienen como strings
+CATEGORIAS = {int(k): v for k, v in categorias_json.items()}
 
 @app.route('/predict', methods=['POST'])
 def predict():

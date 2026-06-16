@@ -49,6 +49,12 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log(' Nuevo cliente conectado:', socket.id);
 
+  // Unirse a una sala personal
+  socket.on('joinUserRoom', ({ userId }) => {
+    socket.join(`user-${userId}`);
+    console.log(` Cliente ${socket.id} se unió a su sala personal: user-${userId}`);
+  });
+
   // Unirse a una sala
   socket.on('joinRoom', ({ room }) => {
     socket.join(room);
@@ -58,6 +64,15 @@ io.on('connection', (socket) => {
   // Recibir y reenviar mensaje
   socket.on('sendMessage', (message) => {
     io.to(message.room).emit('receiveMessage', message);
+    // Notificar al destinatario en su sala personal para actualizar la lista de chats
+    io.to(`user-${message.destinatario_id}`).emit('conversationUpdate');
+  });
+
+  // Recibir evento de mensajes leídos
+  socket.on('messagesRead', ({ room, lectorId }) => {
+    socket.to(room).emit('messagesRead', { lectorId });
+    // Notificar actualización de conversaciones para refrescar el conteo de no leídos
+    io.to(room).emit('conversationUpdate');
   });
 
   socket.on('disconnect', () => {

@@ -13,6 +13,7 @@ const PerfilUsuario = () => {
   const usuarioInicial = JSON.parse(localStorage.getItem('user'));
   const navigate = useNavigate();
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
   const [formData, setFormData] = useState({
     nombre: usuarioInicial?.nombre || '',
     email: usuarioInicial?.email || '',
@@ -91,7 +92,7 @@ const PerfilUsuario = () => {
                 </div>
 
                 <button 
-                  onClick={() => { /* Lógica de logout */ }}
+                  onClick={() => setConfirmLogoutOpen(true)}
                   className="mt-8 flex items-center gap-2 text-red-400 hover:text-red-500 font-black text-xs uppercase tracking-widest transition-colors"
                 >
                   <LogOut size={16} /> Cerrar Sesión
@@ -233,6 +234,49 @@ const PerfilUsuario = () => {
         </footer>
 
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN DE LOGOUT */}
+      <AnimatePresence>
+        {confirmLogoutOpen && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 border border-slate-100"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                  <LogOut size={24} />
+                </div>
+                <h3 className="text-lg font-black text-slate-950 mb-2">¿Cerrar Sesión?</h3>
+                <p className="text-xs text-slate-500 font-semibold mb-6">
+                  ¿Estás seguro de que deseas salir de tu cuenta en ReUseTech? Tendrás que iniciar sesión de nuevo para acceder a tus dispositivos.
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => setConfirmLogoutOpen(false)}
+                    className="flex-1 py-3 text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      localStorage.removeItem('token');
+                      localStorage.removeItem('user');
+                      setConfirmLogoutOpen(false);
+                      navigate('/login');
+                    }}
+                    className="flex-1 py-3 text-xs font-black text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all shadow-md shadow-red-200"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

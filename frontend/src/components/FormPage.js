@@ -2,254 +2,201 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import PublishIcon from '@mui/icons-material/Publish';
+import { 
+  Monitor, 
+  Zap, 
+  Shield, 
+  Battery, 
+  Calendar, 
+  Lock, 
+  ShieldCheck, 
+  Loader2, 
+  ArrowLeft, 
+  ArrowRight, 
+  RotateCcw,
+  Upload,
+  MapPin,
+  Check
+} from 'lucide-react';
 
 // ─── API Key ──────────────────────────────────────────────────────────
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDA6ZQGx-Ih-qm7IaIiaPGeKnY7Z4OyRk4';
 
-// ─── Dispositivos DB (idéntica al original) ───────────────────────────
-const dispositivosDB = {
-  'laptop': {
-    categoria: 'Computadoras y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Computadora portátil en buen estado de funcionamiento.'
-  },
-  'smartphone': {
-    categoria: 'Teléfonos y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Teléfono inteligente en condiciones de uso.'
-  },
-  'tablet': {
-    categoria: 'Teléfonos y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Tablet con pantalla táctil funcional.'
-  },
-  'desktop computer': {
-    categoria: 'Computadoras y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Computadora de escritorio completa.'
-  },
-  'monitor': {
-    categoria: 'Computadoras y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Monitor en buen estado.'
-  },
-  'keyboard': {
-    categoria: 'Computadoras y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Teclado funcional.'
-  },
-  'mouse': {
-    categoria: 'Computadoras y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Mouse en buen estado.'
-  },
-  'printer': {
-    categoria: 'Computadoras y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Impresora en condiciones de uso.'
-  },
-  'refrigerator': {
-    categoria: 'Electrodomésticos',
-    estado: 'Usado',
-    descripcion: 'Refrigerador funcional.'
-  },
-  'microwave': {
-    categoria: 'Electrodomésticos',
-    estado: 'Usado',
-    descripcion: 'Microondas en buen estado.'
-  },
-  'tv': {
-    categoria: 'Electrodomésticos',
-    estado: 'Usado',
-    descripcion: 'Televisor en buenas condiciones.'
-  },
-  'headphones': {
-    categoria: 'Teléfonos y Accesorios',
-    estado: 'Usado',
-    descripcion: 'Audífonos funcionales.'
-  }
-};
-
-// ─── Detección por imagen (idéntica al original) ──────────────────────
-const detectarDispositivoPorImagen = async (file) => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const img = new Image();
-      img.onload = function () {
-        const { width, height } = img;
-        const ratio = width / height;
-        console.log('Proporción de imagen (ancho/alto):', ratio);
-        if (ratio >= 0.4 && ratio <= 0.6) {
-          resolve('smartphone');
-        } else if (ratio > 0.6 && ratio <= 0.8) {
-          resolve('tablet');
-        } else if (ratio > 1.2) {
-          resolve('laptop');
-        } else if (ratio > 0.8 && ratio <= 1.2) {
-          resolve('tablet');
-        } else {
-          resolve('smartphone');
-        }
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-};
-
-// ─── Detección por nombre (idéntica al original) ──────────────────────
-const detectarDispositivoPorNombre = (nombreArchivo) => {
-  nombreArchivo = nombreArchivo.toLowerCase();
-  const keywordMap = {
-    'laptop': 'laptop', 'notebook': 'laptop', 'portatil': 'laptop',
-    'phone': 'smartphone', 'movil': 'smartphone', 'celular': 'smartphone',
-    'smartphone': 'smartphone', 'iphone': 'smartphone', 'android': 'smartphone',
-    'vivo': 'smartphone', 'samsung': 'smartphone', 'xiaomi': 'smartphone', 'huawei': 'smartphone',
-    'tablet': 'tablet', 'ipad': 'tablet',
-    'desktop': 'desktop computer', 'pc': 'desktop computer',
-    'monitor': 'monitor', 'pantalla': 'monitor',
-    'teclado': 'keyboard', 'keyboard': 'keyboard',
-    'mouse': 'mouse', 'raton': 'mouse',
-    'printer': 'printer', 'impresora': 'printer',
-    'fridge': 'refrigerator', 'refrigerador': 'refrigerator',
-    'microwave': 'microwave', 'microondas': 'microwave',
-    'tv': 'tv', 'television': 'tv',
-    'headphone': 'headphones', 'auricular': 'headphones'
-  };
-  for (const [keyword, device] of Object.entries(keywordMap)) {
-    if (nombreArchivo.includes(keyword)) return device;
-  }
-  return null;
-};
-
-// ─── Estilos globales ─────────────────────────────────────────────────
+// ─── Estilos globales corporativos ────────────────────────────────────
 const injectStyles = () => {
   if (document.getElementById('fml-styles')) return;
   const s = document.createElement('style');
   s.id = 'fml-styles';
   s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    :root{
+      --brand-dark: #0F172A;
+      --accent-cyan: #06B6D4;
+      --accent-blue: #2563EB;
+      --bg-clean: #F0F9FF;
+      --bg-white: #FFFFFF;
+      --border: #BAE6FD;
+      --border-2: #7DD3FC;
+      --muted-bg: #E0F2FE;
+      --muted: #94A3B8;
+      --muted-text: #64748B;
+      --text-mid: #475569;
+      --seal-bg: #F0FDFA;
+      --seal-border: #99F6E4;
+      --seal-icon-bg: #CCFBF1;
+      --primary: #06B6D4;
+      --primary-dark: #0891B2;
+      --primary-light: #E0F2FE;
+      --sidebar-active-bg: #E0F2FE;
+      --sidebar-active-text: #0891B2;
+      --bar-fill: #06B6D4;
+    }
     .fml { font-family: 'Plus Jakarta Sans', sans-serif; }
     .fml *, .fml *::before, .fml *::after { box-sizing: border-box; }
 
     .fml-glass {
-      background: rgba(255,255,255,0.75);
-      backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.65);
-      border-radius: 2rem;
-      box-shadow: 0 24px 64px -12px rgba(0,0,0,0.07), 0 0 0 1px rgba(49,194,219,.06);
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 24px -8px rgba(6, 182, 212, 0.08);
     }
 
     /* Sidebar pills */
-    .fml-pill { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; border-radius:1.25rem; transition:all .25s; }
-    .fml-pill.active { background:#E8F9FC; }
-    .fml-pill.active .fml-pill-label { color:#1DA8BF; }
+    .fml-pill { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; border-radius:1rem; transition:all .2s; }
+    .fml-pill.active { background: var(--sidebar-active-bg); }
+    .fml-pill.active .fml-pill-label { color: var(--sidebar-active-text); }
     .fml-pill.done   .fml-pill-label { color:#22C55E; }
-    .fml-pill.idle   .fml-pill-label { color:#94A3B8; }
+    .fml-pill.idle   .fml-pill-label { color:var(--muted); }
     .fml-pill-num {
-      width:2rem; height:2rem; border-radius:50%;
+      width:1.75rem; height:1.75rem; border-radius:50%;
       display:flex; align-items:center; justify-content:center;
-      font-weight:800; font-size:.78rem; flex-shrink:0; transition:all .25s;
+      font-weight:700; font-size:.78rem; flex-shrink:0; transition:all .2s;
     }
-    .fml-pill-num.active { background:#31C2DB; color:#fff; box-shadow:0 4px 14px rgba(49,194,219,.4); }
+    .fml-pill-num.active { background: var(--primary); color:#fff; }
     .fml-pill-num.done   { background:#22C55E; color:#fff; }
-    .fml-pill-num.idle   { background:#F1F5F9; color:#94A3B8; }
-    .fml-pill-label { font-weight:800; font-size:.88rem; line-height:1.2; }
-    .fml-pill-sub   { font-size:.7rem; font-weight:600; color:#94A3B8; margin-top:.1rem; }
+    .fml-pill-num.idle   { background:var(--border); color:var(--muted); }
+    .fml-pill-label { font-weight:750; font-size:.85rem; line-height:1.2; }
+    .fml-pill-sub   { font-size:.68rem; font-weight:600; color:#94A3B8; margin-top:.1rem; }
 
     /* Inputs */
     .fml-field { display:flex; flex-direction:column; gap:.4rem; }
-    .fml-label { font-size:.68rem; font-weight:800; color:#94A3B8; text-transform:uppercase; letter-spacing:.07em; }
+    .fml-label { font-size:.65rem; font-weight:800; color:#64748B; text-transform:uppercase; letter-spacing:.07em; }
     .fml-input, .fml-select, .fml-textarea {
-      width:100%; padding:.9rem 1.1rem;
-      font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:.92rem; color:#0F172A;
-      background:#F8FAFC; border:2px solid transparent; border-radius:1.1rem;
-      outline:none; transition:all .2s; appearance:none;
+      width:100%; padding:.85rem 1rem;
+      font-family:'Plus Jakarta Sans',sans-serif; font-weight:600; font-size:.9rem; color:var(--brand-dark);
+      background:var(--bg-clean); border:1px solid var(--border); border-radius:0.75rem;
+      outline:none; transition:all .15s; appearance:none;
     }
     .fml-input:focus, .fml-select:focus, .fml-textarea:focus {
-      border-color:#31C2DB; background:#fff; box-shadow:0 0 0 4px rgba(49,194,219,.1);
+      border-color: var(--primary); background:var(--bg-white); box-shadow:0 0 0 3px rgba(6,182,212,.10);
     }
-    .fml-input::placeholder, .fml-textarea::placeholder { color:#CBD5E1; font-weight:500; }
-    .fml-textarea { resize:vertical; min-height:110px; }
+    .fml-input::placeholder, .fml-textarea::placeholder { color:#94A3B8; font-weight:500; }
+    .fml-textarea { resize:vertical; min-height:100px; }
 
     /* Drop zone */
     .fml-drop {
-      border:2.5px dashed #CBD5E1; border-radius:1.75rem;
-      padding:2.5rem 2rem; text-align:center; cursor:pointer;
-      transition:all .25s; background:#F8FAFC;
+      border:1.5px dashed var(--border-2); border-radius:1rem;
+      padding:2rem 1.5rem; text-align:center; cursor:pointer;
+      transition:all .15s; background: var(--bg-clean);
     }
-    .fml-drop:hover { border-color:#31C2DB; background:#E8F9FC; }
+    .fml-drop:hover { border-color: var(--primary); background:var(--muted-bg); }
 
     /* Buttons */
     .fml-btn-primary {
-      background:#0F172A; color:#fff; padding:.95rem 2rem;
-      border-radius:1.1rem; border:none; cursor:pointer;
-      font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:.95rem;
-      display:inline-flex; align-items:center; gap:.6rem;
-      transition:all .22s; box-shadow:0 8px 24px rgba(15,23,42,.15);
+      background: var(--primary); color:#fff; padding:.85rem 1.75rem;
+      border-radius:0.75rem; border:none; cursor:pointer;
+      font-family:'Plus Jakarta Sans',sans-serif; font-weight:750; font-size:.9rem;
+      display:inline-flex; align-items:center; gap:.5rem;
+      transition:all .18s;
     }
-    .fml-btn-primary:hover:not(:disabled) { background:#31C2DB; transform:translateY(-2px); box-shadow:0 12px 28px rgba(49,194,219,.3); }
+    .fml-btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
     .fml-btn-primary:disabled { opacity:.35; cursor:not-allowed; }
     .fml-btn-outline {
-      background:transparent; color:#31C2DB; padding:.95rem 1.75rem;
-      border-radius:1.1rem; border:2px solid #31C2DB; cursor:pointer;
-      font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:.95rem;
-      display:inline-flex; align-items:center; gap:.5rem; transition:all .22s;
+      background:transparent; color:var(--text-mid); padding:.85rem 1.5rem;
+      border-radius:0.75rem; border:1px solid var(--border-2); cursor:pointer;
+      font-family:'Plus Jakarta Sans',sans-serif; font-weight:750; font-size:.9rem;
+      display:inline-flex; align-items:center; gap:.4rem; transition:all .18s;
     }
-    .fml-btn-outline:hover:not(:disabled) { background:#E8F9FC; }
+    .fml-btn-outline:hover:not(:disabled) { background:var(--bg-clean); border-color: var(--primary); color: var(--primary); }
     .fml-btn-outline:disabled { opacity:.3; cursor:not-allowed; }
 
     /* Progress */
-    .fml-bar { height:6px; border-radius:99px; background:#E2E8F0; overflow:hidden; }
-    .fml-bar-fill { height:100%; background:linear-gradient(90deg,#31C2DB,#1DA8BF); border-radius:99px; transition:width .3s; }
-
-    /* Toggle */
-    .fml-toggle {
-      width:50px; height:26px; border-radius:99px; border:none; cursor:pointer;
-      position:relative; transition:background .25s; flex-shrink:0;
-    }
-    .fml-toggle::after {
-      content:''; position:absolute; top:3px; left:3px;
-      width:20px; height:20px; border-radius:50%; background:#fff;
-      transition:transform .25s; box-shadow:0 2px 6px rgba(0,0,0,.2);
-    }
-    .fml-toggle.on  { background:#31C2DB; }
-    .fml-toggle.on::after  { transform:translateX(24px); }
-    .fml-toggle.off { background:#CBD5E1; }
+    .fml-bar { height:4px; border-radius:99px; background:var(--muted-bg); overflow:hidden; }
+    .fml-bar-fill { height:100%; background: var(--primary); border-radius:99px; transition:width .3s; }
 
     /* Chips */
     .fml-chip {
       display:inline-flex; align-items:center; gap:.3rem;
-      padding:.28rem .8rem; border-radius:99px;
-      font-size:.7rem; font-weight:800;
+      padding:.25rem .7rem; border-radius:99px;
+      font-size:.65rem; font-weight:800;
       font-family:'Plus Jakarta Sans',sans-serif;
+      text-transform: uppercase;
+      letter-spacing: .03em;
     }
-    .fml-chip-brand { background:#E8F9FC; color:#1DA8BF; }
-    .fml-chip-green { background:#DCFCE7; color:#16A34A; }
-    .fml-chip-amber { background:#FEF9C3; color:#B45309; }
+    .fml-chip-brand { background: #DCFDF5; color: #0E7490; }
+    .fml-chip-green { background:#DCFCE7; color:#15803D; }
+    .fml-chip-amber { background:#FEF9C3; color:#A16207; }
 
     /* Summary rows */
-    .fml-row { display:flex; flex-direction:column; gap:.25rem; padding:.85rem 0; border-bottom:1px solid #F1F5F9; }
+    .fml-row { display:flex; flex-direction:column; gap:.25rem; padding:.8rem 0; border-bottom:1px solid var(--muted-bg); }
     .fml-row:last-child { border-bottom:none; }
-    .fml-row-label { font-size:.68rem; font-weight:800; color:#94A3B8; text-transform:uppercase; letter-spacing:.07em; }
-    .fml-row-val   { font-size:.92rem; font-weight:700; color:#0F172A; }
-
-    /* Correction btn */
-    .fml-btn-fix {
-      background:#fff; border:1.5px solid #31C2DB; color:#31C2DB;
-      padding:.35rem .9rem; border-radius:.8rem;
-      font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:.78rem; cursor:pointer;
-    }
-    .fml-btn-fix:hover { background:#E8F9FC; }
+    .fml-row-label { font-size:.65rem; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+    .fml-row-val   { font-size:.88rem; font-weight:700; color:var(--brand-dark); }
 
     /* Section divider */
-    .fml-divider { height:1px; background:#F1F5F9; margin:1.5rem 0; }
+    .fml-divider { height:1px; background: var(--muted-bg); margin:1.25rem 0; }
+
+    /* Cuestionario cards */
+    .fml-q-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.15s ease-in-out;
+      min-height: 100px;
+      text-align: center;
+    }
+    .fml-q-card:hover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .fml-q-card.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #ffffff !important;
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.25);
+    }
+    .fml-q-card.active * {
+      color: #ffffff !important;
+    }
+
+    /* Sello de Verificación */
+    .fml-cert-seal {
+      border-radius: 1rem;
+      padding: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      border: 1px solid var(--seal-border);
+      background: var(--seal-bg);
+      color: var(--brand-dark);
+    }
+    .fml-cert-seal svg {
+      display: block;
+      width: 1.45rem;
+      height: 1.45rem;
+      color: var(--primary);
+    }
 
     /* Responsive */
     @media(max-width:680px){
-      .fml-sidebar { display:none; }
+      .fml-sidebar { display: block; width: 100%; margin-bottom: 1.5rem; position: relative !important; top: 0 !important; }
       .fml-layout  { grid-template-columns:1fr !important; }
       .fml-grid2   { grid-template-columns:1fr !important; }
     }
@@ -259,19 +206,19 @@ const injectStyles = () => {
 
 // ─── Sidebar component ────────────────────────────────────────────────
 const STEPS_META = [
-  { label: 'Sube una foto',        sub: 'Reconocimiento automático' },
-  { label: 'Información',          sub: 'Detalles del dispositivo' },
-  { label: 'Ubicación y contacto', sub: 'Dónde está y cómo contactar' },
-  { label: 'Publicar',             sub: 'Revisión y envío' },
+  { label: 'Evaluación de Salud IA', sub: 'Auditoría técnica del hardware' },
+  { label: 'Datos de Publicación',   sub: 'Registro de datos e imagen' },
 ];
 
 const StepSidebar = ({ activeStep }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
     {STEPS_META.map((s, i) => {
-      const st = i < activeStep ? 'done' : i === activeStep ? 'active' : 'idle';
+      const isActive = (i === 0 && (activeStep === 0 || activeStep === 1)) || (i === 1 && activeStep === 2);
+      const isDone = (i === 0 && activeStep === 2);
+      const st = isDone ? 'done' : isActive ? 'active' : 'idle';
       return (
         <div key={i} className={`fml-pill ${st}`}>
-          <div className={`fml-pill-num ${st}`}>{st === 'done' ? '✓' : i + 1}</div>
+          <div className={`fml-pill-num ${st}`}>{st === 'done' ? <Check size={12} /> : i + 1}</div>
           <div>
             <div className="fml-pill-label">{s.label}</div>
             <div className="fml-pill-sub">{s.sub}</div>
@@ -289,11 +236,63 @@ const Field = ({ label, children }) => (
   </div>
 );
 
+// ─── Preguntas del Cuestionario ────────────────────────────────────────
+const PREGUNTAS = [
+  {
+    id: 'dispositivo',
+    q: '¿Qué tipo de dispositivo desea evaluar?',
+    IconComponent: Monitor,
+    options: [
+      'Teléfonos y Accesorios',
+      'Computadoras y Accesorios',
+      'Tablets y Accesorios',
+      'Otros'
+    ]
+  },
+  {
+    id: 'enciende',
+    q: '¿El dispositivo enciende?',
+    IconComponent: Zap,
+    options: ['Sí', 'No', 'A veces']
+  },
+  {
+    id: 'estadoFisico',
+    q: '¿Cuál es el estado físico de la pantalla o carcasa?',
+    IconComponent: Shield,
+    options: ['Perfecto', 'Rayado', 'Roto/Estrellado']
+  },
+  {
+    id: 'bateria',
+    q: '¿Cómo rinde la batería del equipo?',
+    IconComponent: Battery,
+    options: ['Dura bien', 'Dura poco', 'No carga']
+  },
+  {
+    id: 'antiguedad',
+    q: '¿Cuál es la antigüedad aproximada?',
+    IconComponent: Calendar,
+    options: ['0-2 años', '3-5 años', 'Más de 5 años']
+  }
+];
+
 // ─── Componente principal ─────────────────────────────────────────────
 const Formulario = () => {
   useEffect(() => { injectStyles(); }, []);
 
   const [activeStep, setActiveStep] = useState(0);
+  
+  const [currentQ, setCurrentQ] = useState(0);
+  const [qaData, setQaData] = useState({
+    dispositivo: '',
+    enciende: '',
+    estadoFisico: '',
+    bateria: '',
+    antiguedad: ''
+  });
+
+  const [loadingIA, setLoadingIA] = useState(false);
+  const [diagnosticoResult, setDiagnosticoResult] = useState(null);
+
   const [formData, setFormData] = useState({
     titulo: '',
     nombredeldispositivo: '',
@@ -306,34 +305,10 @@ const Formulario = () => {
     foto: null,
     fotoPreview: ''
   });
-  const [isRecognizing, setIsRecognizing] = useState(false);
-  const [lastDetectedDevice, setLastDetectedDevice] = useState('');
-  const [reconocimientoActivo, setReconocimientoActivo] = useState(true);
-  const [progress, setProgress] = useState(0);
+
   const mapRef = useRef(null);
 
-  // ── Progreso de reconocimiento (idéntico al original) ───────────────
-  useEffect(() => {
-    let interval;
-    if (isRecognizing) {
-      setProgress(0);
-      interval = setInterval(() => {
-        setProgress((prevProgress) => {
-          const newProgress = prevProgress + 12;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            return 100;
-          }
-          return newProgress;
-        });
-      }, 300);
-    } else {
-      setProgress(0);
-    }
-    return () => { clearInterval(interval); };
-  }, [isRecognizing]);
-
-  // ── Google Maps (idéntico al original) ──────────────────────────────
+  // ── Google Maps ─────────────────────────────────────────────────────
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       if (!window.google || !window.google.maps) {
@@ -357,17 +332,14 @@ const Formulario = () => {
   }, [activeStep]);
 
   const initMap = () => {
-    if (!window.google || !window.google.maps || !mapRef.current) {
-      console.log('Google Maps no está disponible o el contenedor del mapa no existe');
-      return;
-    }
+    if (!window.google || !window.google.maps || !mapRef.current) return;
     try {
       const defaultLocation = { lat: 19.4326, lng: -99.1332 };
       const map = new window.google.maps.Map(mapRef.current, {
         center: defaultLocation,
         zoom: 15,
         styles: [
-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e9e9e9' }, { lightness: 17 }] },
+          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#e9f7fa' }, { lightness: 17 }] },
           { featureType: 'landscape', elementType: 'geometry', stylers: [{ color: '#f5f5f5' }, { lightness: 20 }] },
           { featureType: 'road.highway', elementType: 'geometry.fill', stylers: [{ color: '#ffffff' }, { lightness: 17 }] },
           { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#ffffff' }, { lightness: 29 }, { weight: 0.2 }] },
@@ -384,7 +356,7 @@ const Formulario = () => {
         animation: window.google.maps.Animation.DROP,
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
-          fillColor: '#31C2DB',
+          fillColor: '#06B6D4',
           fillOpacity: 1,
           strokeColor: '#FFFFFF',
           strokeWeight: 2,
@@ -442,71 +414,95 @@ const Formulario = () => {
     }
   };
 
-  // ── Dropzone (idéntico al original) ─────────────────────────────────
+  // ── Dropzone ────────────────────────────────────────────────────────
   const { getRootProps, getInputProps } = useDropzone({
     accept: { 'image/*': [] },
-    onDrop: async (acceptedFiles) => {
+    onDrop: (acceptedFiles) => {
       if (acceptedFiles.length === 0) {
         alert('Por favor, sube una imagen válida.');
         return;
       }
       const file = acceptedFiles[0];
-      console.log('Archivo aceptado:', file.name);
       setFormData(prev => ({
         ...prev,
         foto: file,
         fotoPreview: URL.createObjectURL(file)
       }));
-      if (reconocimientoActivo) {
-        setIsRecognizing(true);
-        try {
-          let dispositivo = await detectarDispositivoPorImagen(file);
-          console.log('Dispositivo detectado por imagen:', dispositivo);
-          if (!dispositivo) {
-            const dispositivoPorNombre = detectarDispositivoPorNombre(file.name);
-            if (dispositivoPorNombre) {
-              dispositivo = dispositivoPorNombre;
-              console.log('Dispositivo detectado por nombre:', dispositivo);
-            }
-          }
-          setLastDetectedDevice(dispositivo);
-          const info = dispositivosDB[dispositivo];
-          setFormData(prev => ({
-            ...prev,
-            titulo: `${dispositivo.charAt(0).toUpperCase() + dispositivo.slice(1)} para reutilizar`,
-            nombredeldispositivo: dispositivo,
-            categoria: info.categoria,
-            estado: info.estado,
-            descripcion: info.descripcion
-          }));
-        } catch (error) {
-          console.error('Error en reconocimiento:', error);
-          const dispositivoPorNombre = detectarDispositivoPorNombre(file.name);
-          const dispositivo = dispositivoPorNombre || 'smartphone';
-          const info = dispositivosDB[dispositivo];
-          setLastDetectedDevice(dispositivo);
-          setFormData(prev => ({
-            ...prev,
-            titulo: `${dispositivo.charAt(0).toUpperCase() + dispositivo.slice(1)} para reutilizar`,
-            nombredeldispositivo: dispositivo,
-            categoria: info.categoria,
-            estado: info.estado,
-            descripcion: info.descripcion
-          }));
-        } finally {
-          setTimeout(() => { setIsRecognizing(false); }, 1000);
-        }
-      }
     }
   });
 
-  // ── handleChange (idéntico al original) ─────────────────────────────
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // ── handleSubmit (idéntico al original) ─────────────────────────────
+  const handleSelectOption = (option) => {
+    const qKey = PREGUNTAS[currentQ].id;
+    setQaData(prev => ({ ...prev, [qKey]: option }));
+  };
+
+  const handleNextQ = () => {
+    if (currentQ < PREGUNTAS.length - 1) setCurrentQ(prev => prev + 1);
+  };
+
+  const handleBackQ = () => {
+    if (currentQ > 0) setCurrentQ(prev => prev - 1);
+  };
+
+  // ── Diagnóstico IA ──────────────────────────────────────────────────
+  const handleCalcularSalud = async () => {
+    setLoadingIA(true);
+    try {
+      const payload = {
+        respuestas: {
+          enciende: qaData.enciende,
+          estadoFisico: qaData.estadoFisico,
+          bateria: qaData.bateria,
+          antiguedad: qaData.antiguedad
+        },
+        dispositivo: qaData.dispositivo
+      };
+
+      const res = await axios.post('http://localhost:5000/api/diagnostico-ia', payload);
+      const resultPayload = res.data?.data || res.data?.resultado || res.data;
+      setDiagnosticoResult(resultPayload);
+
+      const catMap = {
+        'laptop': 'Computadoras y Accesorios',
+        'desktop': 'Computadoras y Accesorios',
+        'computadoras y accesorios': 'Computadoras y Accesorios',
+        'smartphone': 'Teléfonos y Accesorios',
+        'smartphones': 'Teléfonos y Accesorios',
+        'teléfonos y accesorios': 'Teléfonos y Accesorios',
+        'tablet': 'Tablets y Accesorios',
+        'tablets': 'Tablets y Accesorios',
+        'tablets y accesorios': 'Tablets y Accesorios',
+        'smartwatch': 'Otros',
+        'otros': 'Otros'
+      };
+      const selectedDevice = qaData.dispositivo || '';
+      const keyLower = selectedDevice.trim().toLowerCase();
+      const catCalculada = catMap[keyLower] || 'Otros';
+
+      setFormData(prev => ({
+        ...prev,
+        nombredeldispositivo: selectedDevice,
+        estado: resultPayload?.estado,
+        titulo: `${selectedDevice} para reutilizar`,
+        categoria: catCalculada,
+        descripcion: resultPayload?.analisis || resultPayload?.diagnostico || ''
+      }));
+
+      setActiveStep(1);
+    } catch (err) {
+      console.error(err);
+      alert('Error en el servicio de diagnóstico: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setLoadingIA(false);
+    }
+  };
+
+  // ── Submit final ────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     const usuario = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
@@ -514,36 +510,47 @@ const Formulario = () => {
       alert('Debes iniciar sesión para publicar');
       return;
     }
+
     const camposRequeridos = ['titulo', 'nombredeldispositivo', 'categoria', 'estado', 'descripcion', 'contacto'];
     const camposFaltantes = camposRequeridos.filter(campo => !formData[campo]);
     if (camposFaltantes.length > 0) {
       alert('Por favor completa todos los campos requeridos');
       return;
     }
+
     if (!formData.foto) {
       alert('Por favor sube una foto del dispositivo');
       return;
     }
+
     const form = new FormData();
     Object.keys(formData).forEach(key => {
       if (key !== 'fotoPreview') form.append(key, formData[key]);
     });
     form.append('autor_id', usuario.id);
+    form.append('verificacion_id', diagnosticoResult.verificacion_id);
+
     try {
       const loadingIndicator = document.createElement('div');
       loadingIndicator.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:9999;';
-      loadingIndicator.innerHTML = '<div style="background:white;padding:20px;border-radius:10px;"><h3>Publicando...</h3></div>';
+      loadingIndicator.innerHTML = '<div style="background:white;padding:20px;border-radius:10px;text-align:center;font-family:sans-serif;"><h3>Publicando dispositivo certificado...</h3></div>';
       document.body.appendChild(loadingIndicator);
+
       await axios.post('http://localhost:5000/api/publicaciones', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+
       document.body.removeChild(loadingIndicator);
-      alert('Publicación realizada con éxito');
+      alert('Dispositivo publicado con éxito en el catálogo');
+      
       setFormData({
         titulo: '', nombredeldispositivo: '', marcaoModelo: '',
         categoria: '', estado: '', descripcion: '',
         contacto: '', ubicacion: '', foto: null, fotoPreview: ''
       });
+      setQaData({ dispositivo: '', enciende: '', estadoFisico: '', bateria: '', antiguedad: '' });
+      setCurrentQ(0);
+      setDiagnosticoResult(null);
       setActiveStep(0);
     } catch (error) {
       console.error('Error al publicar:', error);
@@ -551,392 +558,404 @@ const Formulario = () => {
     }
   };
 
-  // ── toggleReconocimiento (idéntico al original) ──────────────────────
-  const toggleReconocimiento = () => {
-    setReconocimientoActivo(!reconocimientoActivo);
-  };
+  const qItem = PREGUNTAS[currentQ];
+  const isQAValueSelected = !!qaData[qItem.id];
+  const isQAFinished = Object.values(qaData).every(v => v !== '');
+  const isPublishFormReady = formData.titulo && formData.categoria && formData.foto && formData.contacto && formData.ubicacion;
 
-  // ── corregirDispositivo (idéntico al original) ───────────────────────
-  const corregirDispositivo = () => {
-    const opciones = Object.keys(dispositivosDB).map(key =>
-      key.charAt(0).toUpperCase() + key.slice(1)
-    ).join(', ');
-    const userDevice = prompt(`¿Qué dispositivo es realmente? Opciones: ${opciones}`, lastDetectedDevice);
-    if (userDevice) {
-      const deviceKey = userDevice.toLowerCase();
-      if (dispositivosDB[deviceKey]) {
-        setLastDetectedDevice(deviceKey);
-        const info = dispositivosDB[deviceKey];
-        setFormData(prev => ({
-          ...prev,
-          titulo: `${deviceKey.charAt(0).toUpperCase() + deviceKey.slice(1)} para reutilizar`,
-          nombredeldispositivo: deviceKey,
-          categoria: info.categoria,
-          estado: info.estado,
-          descripcion: info.descripcion
-        }));
-      } else {
-        alert('Dispositivo no reconocido en nuestra base de datos. Por favor selecciona uno de los dispositivos disponibles.');
-      }
-    }
-  };
-
-  // ── Navegación (idéntica al original) ───────────────────────────────
-  const handleNext = () => { setActiveStep((prev) => prev + 1); };
-  const handleBack = () => { setActiveStep((prev) => prev - 1); };
-
-  // ── Validaciones (idénticas al original) ────────────────────────────
-  const isPaso1Completo = formData.foto && formData.nombredeldispositivo;
-  const isPaso2Completo = formData.titulo && formData.categoria && formData.estado && formData.descripcion;
-  const isPaso3Completo = formData.contacto && formData.ubicacion;
-
-  // ── Chip estado ──────────────────────────────────────────────────────
-  const chipClass = (estado) => {
-    if (['Nuevo', 'Como nuevo'].includes(estado)) return 'fml-chip fml-chip-green';
-    if (['Dañado', 'Irreparable', 'Desuso'].includes(estado)) return 'fml-chip fml-chip-amber';
-    return 'fml-chip fml-chip-brand';
-  };
-
-  // ── Step panels ──────────────────────────────────────────────────────
-  const stepPanels = [
-
-    // PASO 0 — Foto
-    <motion.div key="step0" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-      <div className="fml-glass" style={{ padding: '2rem' }}>
-
-        {/* Toggle reconocimiento */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0F172A' }}>
-              Reconocimiento automático de dispositivos
-            </div>
-            <div style={{ fontSize: '.78rem', fontWeight: 600, color: '#94A3B8', marginTop: '.15rem' }}>
-              El sistema detecta el tipo de dispositivo desde tu foto
-            </div>
+  // ── Cuestionario ────────────────────────────────────────────────────
+  const renderCuestionario = () => {
+    const ActiveIcon = qItem.IconComponent;
+    
+    return (
+      <motion.div key="step-qa" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+        <div className="fml-glass" style={{ padding: '2.25rem' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.6rem' }}>
+            <span style={{ fontSize: '.68rem', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.07em' }}>
+              Paso Técnico {currentQ + 1} de {PREGUNTAS.length}
+            </span>
+            <span style={{ fontSize: '.72rem', fontWeight: 800, color: 'var(--primary)' }}>
+              {Math.round(((currentQ + 1) / PREGUNTAS.length) * 100)}% Completado
+            </span>
           </div>
-          <button
-            className={`fml-toggle ${reconocimientoActivo ? 'on' : 'off'}`}
-            onClick={toggleReconocimiento}
-          />
-        </div>
-
-        {/* Drop zone */}
-        <motion.div whileHover={{ scale: 1.015 }} transition={{ type: 'spring', stiffness: 300 }}>
-          <div className="fml-drop" {...getRootProps()}>
-            <input {...getInputProps()} />
-            <div style={{ fontSize: '2.8rem', marginBottom: '.75rem' }}>📷</div>
-            <div style={{ fontWeight: 800, color: '#0F172A', fontSize: '1.05rem', marginBottom: '.3rem' }}>
-              Sube una foto del dispositivo
-            </div>
-            <div style={{ color: '#94A3B8', fontWeight: 600, fontSize: '.85rem' }}>
-              Arrastra una imagen o haz clic para seleccionar
-            </div>
-            {reconocimientoActivo && (
-              <div className="fml-chip fml-chip-brand" style={{ marginTop: '1rem', display: 'inline-flex' }}>
-                ✦ Reconocimiento automático activado
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Barra de progreso de reconocimiento */}
-        {isRecognizing && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ marginTop: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.4rem' }}>
-              <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#31C2DB' }}>Analizando imagen...</span>
-              <span style={{ fontSize: '.8rem', fontWeight: 700, color: '#94A3B8' }}>{Math.round(progress)}%</span>
-            </div>
-            <div className="fml-bar">
-              <div className="fml-bar-fill" style={{ width: `${progress}%` }} />
-            </div>
-          </motion.div>
-        )}
-
-        {/* Preview de la foto */}
-        {formData.fotoPreview && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            style={{ marginTop: '1.5rem', borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid #E2E8F0' }}
-          >
-            <img
-              src={formData.fotoPreview}
-              alt="Previsualización"
-              style={{ width: '100%', height: '300px', objectFit: 'contain', background: '#F1F5F9', display: 'block' }}
-            />
-            {lastDetectedDevice && (
-              <div style={{ padding: '.9rem 1.25rem', background: '#E8F9FC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 800, color: '#1DA8BF', fontSize: '.88rem' }}>
-                  ✅ Dispositivo detectado: <em>{lastDetectedDevice}</em>
-                </span>
-                <button className="fml-btn-fix" onClick={corregirDispositivo}>✏ Corregir</button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </div>
-    </motion.div>,
-
-    // PASO 1 — Información del dispositivo
-    <motion.div key="step1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-      <div className="fml-glass" style={{ padding: '2rem' }}>
-        <div style={{ fontWeight: 900, color: '#0F172A', fontSize: '1.2rem', marginBottom: '1.5rem' }}>
-          Detalles del dispositivo
-        </div>
-        <div className="fml-divider" style={{ marginTop: 0 }} />
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-          <div className="fml-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.1rem' }}>
-            <Field label="Título de la publicación">
-              <input
-                className="fml-input"
-                name="titulo"
-                value={formData.titulo}
-                onChange={handleChange}
-                placeholder="Ej. Laptop HP para reutilizar"
-                required
-              />
-            </Field>
-            <Field label="Nombre del dispositivo">
-              <input
-                className="fml-input"
-                name="nombredeldispositivo"
-                value={formData.nombredeldispositivo}
-                onChange={handleChange}
-                placeholder="Ej. laptop"
-                required
-              />
-            </Field>
-            <Field label="Marca o Modelo">
-              <input
-                className="fml-input"
-                name="marcaoModelo"
-                value={formData.marcaoModelo}
-                onChange={handleChange}
-                placeholder="Ej. HP Pavilion, iPhone 12, Samsung Galaxy"
-              />
-            </Field>
-            <Field label="Categoría">
-              <select className="fml-select" name="categoria" value={formData.categoria} onChange={handleChange} required>
-                <option value="">Selecciona una categoría…</option>
-                <option value="Computadoras y Accesorios">Computadoras y Accesorios</option>
-                <option value="Teléfonos y Accesorios">Teléfonos y Accesorios</option>
-                <option value="Electrodomésticos">Electrodomésticos</option>
-              </select>
-            </Field>
-            <Field label="Estado">
-              <select className="fml-select" name="estado" value={formData.estado} onChange={handleChange} required>
-                <option value="">Selecciona el estado…</option>
-                {['Nuevo', 'Como nuevo', 'Buen estado', 'Usado', 'Dañado', 'Desuso', 'Irreparable'].map(o => (
-                  <option key={o} value={o}>{o}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Field label="Descripción">
-            <textarea
-              className="fml-textarea"
-              name="descripcion"
-              value={formData.descripcion}
-              onChange={handleChange}
-              placeholder="Describe las características, estado y cualquier información relevante del dispositivo"
-              required
-            />
-          </Field>
-        </div>
-      </div>
-    </motion.div>,
-
-    // PASO 2 — Ubicación y contacto
-    <motion.div key="step2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-      <div className="fml-glass" style={{ padding: '2rem' }}>
-        <div style={{ fontWeight: 900, color: '#0F172A', fontSize: '1.2rem', marginBottom: '.4rem' }}>
-          Ubicación del dispositivo
-        </div>
-        <div className="fml-divider" />
-        <div style={{ fontSize: '.82rem', color: '#94A3B8', fontWeight: 600, marginBottom: '1.25rem' }}>
-          Arrastra el marcador a la ubicación exacta donde se encuentra el dispositivo o donde prefieres hacer la entrega.
-        </div>
-
-        {/* Mapa */}
-        <div
-          ref={mapRef}
-          style={{ height: 300, borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid #E2E8F0', marginBottom: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,.06)' }}
-        />
-
-        {/* Ubicación detectada */}
-        <Field label="Ubicación detectada por el mapa">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem', padding: '.9rem 1.1rem', background: '#F8FAFC', borderRadius: '1.1rem', fontWeight: 700, color: '#334155', fontSize: '.9rem' }}>
-            <span style={{ fontSize: '1.1rem' }}>📍</span>
-            {formData.ubicacion || 'Cargando ubicación…'}
-          </div>
-        </Field>
-
-        <div className="fml-divider" />
-
-        <div style={{ fontWeight: 900, color: '#0F172A', fontSize: '1.05rem', marginBottom: '1rem' }}>
-          Información de contacto
-        </div>
-        <Field label="Contacto">
-          <input
-            className="fml-input"
-            name="contacto"
-            value={formData.contacto}
-            onChange={handleChange}
-            placeholder="Email, teléfono o forma de contacto"
-            required
-          />
-        </Field>
-      </div>
-    </motion.div>,
-
-    // PASO 3 — Publicar / Resumen
-    <motion.div key="step3" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-      <div className="fml-glass" style={{ padding: '2rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div style={{ fontWeight: 900, color: '#0F172A', fontSize: '1.35rem' }}>Resumen de la publicación</div>
-          <div style={{ fontSize: '.82rem', color: '#94A3B8', fontWeight: 600, marginTop: '.3rem' }}>
-            Verifica que todos los datos sean correctos antes de publicar.
-          </div>
-        </div>
-        <div className="fml-divider" style={{ marginTop: 0 }} />
-
-        <div className="fml-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.75rem' }}>
-
-          {/* Tarjeta foto */}
-          <div style={{ borderRadius: '1.5rem', overflow: 'hidden', border: '1px solid #E2E8F0' }}>
-            <img
-              src={formData.fotoPreview}
-              alt="Previsualización"
-              style={{ width: '100%', height: 200, objectFit: 'contain', background: '#F1F5F9', display: 'block' }}
-            />
-            <div style={{ padding: '1rem' }}>
-              <div style={{ fontWeight: 800, color: '#0F172A', fontSize: '.92rem', marginBottom: '.35rem' }}>
-                {formData.titulo}
-              </div>
-              <div style={{ fontSize: '.78rem', color: '#94A3B8', fontWeight: 600, lineHeight: 1.55 }}>
-                {formData.descripcion?.length > 100
-                  ? formData.descripcion.substring(0, 100) + '...'
-                  : formData.descripcion}
-              </div>
-            </div>
+          <div className="fml-bar" style={{ marginBottom: '2.5rem' }}>
+            <div className="fml-bar-fill" style={{ width: `${((currentQ + 1) / PREGUNTAS.length) * 100}%` }} />
           </div>
 
-          {/* Detalle */}
-          <div>
-            <div className="fml-row">
-              <span className="fml-row-label">Dispositivo</span>
-              <span className="fml-row-val">
-                {formData.nombredeldispositivo}
-                {formData.marcaoModelo && ` — ${formData.marcaoModelo}`}
+          {loadingIA ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3.5rem 0', gap: '1.25rem' }}>
+              <Loader2 size={36} className="animate-spin" style={{ color: 'var(--primary)' }} />
+              <span style={{ fontSize: '.88rem', fontWeight: 700, color: 'var(--text-mid)', letterSpacing: '-0.01em' }}>
+                Procesando auditoría técnica de hardware...
               </span>
             </div>
-            <div className="fml-row">
-              <span className="fml-row-label">Categoría</span>
-              <span className="fml-row-val">{formData.categoria}</span>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '2.5rem' }}>
+                <div style={{ background: 'var(--primary-light)', padding: '1rem', borderRadius: '50%', marginBottom: '1.25rem' }}>
+                  {ActiveIcon && <ActiveIcon size={28} color="var(--primary)" />}
+                </div>
+                <h2 style={{ fontWeight: 800, color: 'var(--brand-dark)', fontSize: '1.25rem', margin: 0, letterSpacing: '-0.02em', textAlign: 'center', lineHeight: 1.35 }}>
+                  {qItem.q}
+                </h2>
+              </div>
+
+              <div className={qItem.id === 'dispositivo' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10" : "grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10"}>
+                {qItem.options.map(opt => {
+                  const isSelected = qaData[qItem.id] === opt;
+                  return (
+                    <div
+                      key={opt}
+                      className={`fml-q-card ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleSelectOption(opt)}
+                    >
+                      <span style={{ fontWeight: 700, fontSize: '.9rem', letterSpacing: '-0.01em' }}>{opt}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button 
+                  className="fml-btn-outline" 
+                  onClick={handleBackQ} 
+                  disabled={currentQ === 0}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <ArrowLeft size={16} /> Atrás
+                </button>
+
+                {currentQ < PREGUNTAS.length - 1 ? (
+                  <button 
+                    className="fml-btn-primary" 
+                    onClick={handleNextQ} 
+                    disabled={!isQAValueSelected}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    Siguiente <ArrowRight size={16} />
+                  </button>
+                ) : (
+                  <button
+                    className="fml-btn-primary"
+                    onClick={handleCalcularSalud}
+                    disabled={!isQAFinished}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    Procesar Diagnóstico <ArrowRight size={16} />
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+        </div>
+      </motion.div>
+    );
+  };
+
+  // ── Resultado IA ────────────────────────────────────────────────────
+  const renderResultadoIA = () => {
+    if (!diagnosticoResult) return null;
+    const certTheme = diagnosticoResult.estado === 'Buen estado' ? 'green' : (diagnosticoResult.estado === 'Usado' ? 'amber' : 'brand');
+    const colorCode = diagnosticoResult.color || '#06B6D4';
+
+    return (
+      <motion.div key="step-result" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+        <div className="fml-glass" style={{ padding: '2.25rem' }}>
+
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div className={`fml-chip fml-chip-${certTheme}`} style={{ fontSize: '.65rem', padding: '.3rem 1rem', marginBottom: '.6rem' }}>
+              Auditoría IA Completada
             </div>
-            <div className="fml-row">
-              <span className="fml-row-label">Estado</span>
-              <span className={chipClass(formData.estado)}>{formData.estado}</span>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--brand-dark)', margin: '0 0 .4rem', letterSpacing: '-0.02em' }}>
+              Informe de Evaluación Técnica
+            </h2>
+            <p style={{ color: 'var(--muted-text)', fontWeight: 600, fontSize: '.84rem', margin: 0 }}>
+              El hardware del dispositivo ha sido analizado para asegurar la inmutabilidad de los datos técnicos.
+            </p>
+          </div>
+
+          <div className="fml-divider" />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '2rem', alignItems: 'start', marginBottom: '1.5rem' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="fml-cert-seal" style={{ padding: '.85rem' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', border: '1px solid var(--seal-border)', background: 'var(--seal-icon-bg)', display: 'grid', placeItems: 'center' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px', color: 'var(--primary)' }}>
+                    <rect x="5" y="10" width="14" height="10" rx="2" />
+                    <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                  </svg>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ margin: 0, fontWeight: 800, color: 'var(--brand-dark)', fontSize: '.98rem' }}>
+                    Sello de Verificación
+                  </div>
+                  <div style={{ marginTop: '.2rem', color: 'var(--text-mid)', fontSize: '.82rem', fontWeight: 600 }}>
+                    Estado homologado: <strong style={{ color: 'var(--primary)' }}>{diagnosticoResult.estado}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{
+                  width: '110px',
+                  height: '110px',
+                  borderRadius: '50%',
+                  border: `3px solid ${colorCode}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  background: 'var(--bg-clean)'
+                }}>
+                  <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--brand-dark)', letterSpacing: '-0.02em' }}>
+                    {diagnosticoResult?.puntuacion ?? diagnosticoResult?.score ?? 0}
+                  </span>
+                  <span style={{ fontSize: '.62rem', fontWeight: 800, color: 'var(--muted-text)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+                    Puntos
+                  </span>
+                </div>
+                <div style={{ marginTop: '0.6rem', fontWeight: 800, color: 'var(--primary)', fontSize: '.84rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                  {diagnosticoResult.estado}
+                </div>
+              </div>
             </div>
-            <div className="fml-row">
-              <span className="fml-row-label">Ubicación</span>
-              <span className="fml-row-val">📍 {formData.ubicacion}</span>
+
+            <div>
+              <div style={{ fontWeight: 800, color: 'var(--brand-dark)', fontSize: '1rem', marginBottom: '.4rem' }}>
+                Diagnóstico de Hardware
+              </div>
+              <p style={{ color: 'var(--text-mid)', fontSize: '.86rem', lineHeight: 1.6, margin: '0 0 1rem', fontWeight: 500 }}>
+                {diagnosticoResult?.analisis || diagnosticoResult?.diagnostico || 'Sin análisis de hardware disponible'}
+              </p>
+
+              <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                <div style={{ background: 'var(--primary-light)', padding: '.45rem .9rem', borderRadius: '.5rem', fontSize: '.74rem', fontWeight: 750, color: 'var(--primary-dark)' }}>
+                  Impacto: {diagnosticoResult?.impacto_ambiental ?? diagnosticoResult?.impacto ?? 'No calculado'}
+                </div>
+                <div style={{ background: 'var(--primary-light)', padding: '.45rem .9rem', borderRadius: '.5rem', fontSize: '.74rem', fontWeight: 750, color: 'var(--primary-dark)' }}>
+                  Confianza: {diagnosticoResult?.confianza ?? 0}%
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-clean)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '1rem', marginBottom: '1.25rem' }}>
+                <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '.8rem', display: 'block', marginBottom: '.2rem', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                  Recomendación de Reacondicionamiento
+                </span>
+                <span style={{ fontSize: '.82rem', color: 'var(--text-mid)', fontWeight: 600 }}>
+                  {diagnosticoResult?.recomendacion_pro || diagnosticoResult?.recomendacion || 'Sin recomendación disponible'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                <button 
+                  className="fml-btn-outline" 
+                  onClick={() => { setActiveStep(0); setCurrentQ(0); }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <RotateCcw size={16} /> Re-evaluar
+                </button>
+                <button 
+                  className="fml-btn-primary" 
+                  onClick={() => {
+                    if (diagnosticoResult) {
+                      const tipoDispositivo = diagnosticoResult.tipo || qaData.dispositivo || formData.nombredeldispositivo || 'Dispositivo';
+                      const estadoHomologado = diagnosticoResult.estado || formData.estado || '';
+                      const sufijoTitulo = estadoHomologado === 'Reciclaje' ? 'para reciclaje' : 'para reutilizar';
+
+                      setFormData(prev => ({
+                        ...prev,
+                        estado: estadoHomologado,
+                        titulo: `${tipoDispositivo} ${sufijoTitulo}`,
+                        puntuacion: diagnosticoResult.puntuacion ?? diagnosticoResult.score ?? prev.puntuacion ?? null,
+                        descripcion: diagnosticoResult.analisis ?? diagnosticoResult.diagnostico ?? prev.descripcion,
+                        verificacion_id: diagnosticoResult.verificacion_id ?? prev.verificacion_id
+                      }));
+                    }
+                    setActiveStep(2);
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  Continuar a la Publicación <ArrowRight size={16} />
+                </button>
+              </div>
             </div>
-            <div className="fml-row">
-              <span className="fml-row-label">Contacto</span>
-              <span className="fml-row-val">{formData.contacto}</span>
+
+          </div>
+
+        </div>
+      </motion.div>
+    );
+  };
+
+  // ── Form Publicación ────────────────────────────────────────────────
+  const renderFormPublicacion = () => {
+    return (
+      <motion.div key="step-form" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.25 }}>
+        
+        <div className="fml-cert-seal" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', border: '1px solid var(--seal-border)', background: 'var(--seal-icon-bg)', display: 'grid', placeItems: 'center' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px', color: 'var(--primary)' }}>
+              <rect x="5" y="10" width="14" height="10" rx="2" />
+              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+            </svg>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ margin: 0, fontWeight: 800, color: 'var(--brand-dark)', fontSize: '1rem', letterSpacing: '-0.02em' }}>
+              Sello de Verificación Certificado
             </div>
+            <p style={{ margin: '.35rem 0 0', fontSize: '.88rem', color: 'var(--text-mid)', fontWeight: 600, lineHeight: 1.6, maxWidth: '700px' }}>
+              Publicación respaldada por auditoría técnica. Estado homologado: <strong style={{ color: 'var(--primary)' }}>{formData.estado || 'Pendiente'}</strong>. Registro inmutable disponible para seguimiento y control.
+            </p>
           </div>
         </div>
 
-        <div className="fml-divider" />
+        <div className="fml-glass" style={{ padding: '2rem' }}>
+          <div style={{ fontWeight: 800, color: 'var(--brand-dark)', fontSize: '1.15rem', marginBottom: '1.25rem', letterSpacing: '-0.01em' }}>
+            Datos del Registro de Publicación
+          </div>
+          <div className="fml-divider" style={{ marginTop: 0 }} />
 
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <button className="fml-btn-primary" onClick={handleSubmit} style={{ padding: '1.1rem 3rem', fontSize: '1rem' }}>
-            <PublishIcon style={{ fontSize: '1.15rem' }} />
-            Publicar dispositivo
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            
+            <div className="fml-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.1rem' }}>
+              <Field label="Título de la publicación">
+                <input className="fml-input" name="titulo" value={formData.titulo} onChange={handleChange} placeholder="Ej. Laptop HP EliteBook para donar" required />
+              </Field>
+
+              <Field label="Dispositivo Evaluado (Inmutable)">
+                <input className="fml-input" name="nombredeldispositivo" value={formData.nombredeldispositivo} disabled style={{ background: '#F0F9FF', color: '#64748B', fontWeight: 700, border: '1px solid var(--border)', cursor: 'not-allowed' }} />
+              </Field>
+
+              <Field label="Marca o Modelo">
+                <input className="fml-input" name="marcaoModelo" value={formData.marcaoModelo} onChange={handleChange} placeholder="Ej. HP EliteBook 840, Samsung Galaxy S20" />
+              </Field>
+
+              <Field label="Categoría del Catálogo">
+                <select className="fml-select" name="categoria" value={formData.categoria} onChange={handleChange} required>
+                  <option value="">Selecciona una categoría…</option>
+                  <option value="Teléfonos y Accesorios">Teléfonos y Accesorios</option>
+                  <option value="Computadoras y Accesorios">Computadoras y Accesorios</option>
+                  <option value="Tablets y Accesorios">Tablets y Accesorios</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </Field>
+
+              <Field label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>Estado Registrado <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#06B6D4', display: 'inline-block' }} /></span>}>
+                <input className="fml-input" name="estado" value={formData.estado} disabled style={{ background: 'var(--bg-clean)', color: 'var(--brand-dark)', fontWeight: 700, border: '1px solid var(--seal-border)', cursor: 'not-allowed' }} />
+              </Field>
+            </div>
+
+            <Field label="Descripción Detallada del Equipo">
+              <textarea className="fml-textarea" name="descripcion" value={formData.descripcion} onChange={handleChange} placeholder="Indique los componentes funcionales, accesorios incluidos o detalles relevantes..." required />
+            </Field>
+
+            <div className="fml-divider" />
+
+            <Field label="Fotografía Real del Hardware (Requerido)">
+              <div className="fml-drop" {...getRootProps()}>
+                <input {...getInputProps()} />
+                <div style={{ color: 'var(--primary)', display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                  <Upload size={24} />
+                </div>
+                <div style={{ fontWeight: 700, color: 'var(--brand-dark)', fontSize: '.9rem', marginBottom: '.15rem', letterSpacing: '-0.01em' }}>
+                  Cargar foto del dispositivo
+                </div>
+                <div style={{ color: '#94A3B8', fontWeight: 600, fontSize: '.78rem' }}>
+                  Arrastre una imagen o haga clic para seleccionar archivo
+                </div>
+              </div>
+            </Field>
+
+            {formData.fotoPreview && (
+              <div style={{ borderRadius: '0.75rem', overflow: 'hidden', border: '1px solid var(--border)', marginTop: '.5rem' }}>
+                <img src={formData.fotoPreview} alt="Previsualización" style={{ width: '100%', height: '200px', objectFit: 'contain', background: 'var(--bg-clean)' }} />
+              </div>
+            )}
+
+            <div className="fml-divider" />
+
+            <div style={{ fontWeight: 800, color: 'var(--brand-dark)', fontSize: '1rem', marginBottom: '.5rem', letterSpacing: '-0.01em' }}>
+              Ubicación y Datos de Contacto
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '.78rem', color: 'var(--primary)', fontWeight: 600, marginBottom: '.75rem' }}>
+              <MapPin size={14} /> Arrastre el marcador a la dirección o punto de entrega acordado.
+            </div>
+            
+            <div ref={mapRef} style={{ height: 240, borderRadius: '1rem', overflow: 'hidden', border: '1px solid var(--border)', marginBottom: '1rem' }} />
+
+            <Field label="Ubicación de Entrega">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', padding: '.75rem 1rem', background: 'var(--bg-clean)', border: '1px solid var(--border)', borderRadius: '0.75rem', fontWeight: 700, color: 'var(--brand-dark)', fontSize: '.85rem' }}>
+                {formData.ubicacion || 'Cargando ubicación desde el mapa…'}
+              </div>
+            </Field>
+
+            <Field label="Contacto de Coordinación">
+              <input className="fml-input" name="contacto" value={formData.contacto} onChange={handleChange} placeholder="Teléfono, correo electrónico o usuario de mensajería" required />
+            </Field>
+
+          </div>
+
+          <div className="fml-divider" />
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button className="fml-btn-outline" onClick={() => setActiveStep(1)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              <ArrowLeft size={16} /> Ver Auditoría
+            </button>
+            <button className="fml-btn-primary" onClick={handleSubmit} disabled={!isPublishFormReady} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              Publicar Dispositivo Certificado <ArrowRight size={16} />
+            </button>
+          </div>
+
         </div>
-      </div>
-    </motion.div>,
-  ];
+      </motion.div>
+    );
+  };
 
-  // ── Render ───────────────────────────────────────────────────────────
+  // ── Render General ──
   return (
-    <div className="fml" style={{ minHeight: '100vh', padding: '2rem 1rem 5rem' }}>
-
-      {/* Blobs de fondo */}
+    <div className="fml" style={{ minHeight: '100vh', padding: '2.5rem 1rem 5rem', background: 'linear-gradient(160deg, #F0F9FF 0%, #FFFFFF 60%, #E0F2FE 100%)' }}>
+      
       <div style={{ position: 'fixed', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '-8%', width: '42%', height: '42%', background: 'rgba(49,194,219,.13)', borderRadius: '50%', filter: 'blur(90px)' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', right: '-8%', width: '38%', height: '38%', background: 'rgba(29,168,191,.09)', borderRadius: '50%', filter: 'blur(90px)' }} />
+        <div style={{ position: 'absolute', top: '-10%', left: '-8%', width: '42%', height: '42%', background: 'rgba(186, 230, 253, 0.35)', borderRadius: '50%', filter: 'blur(90px)' }} />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-8%', width: '38%', height: '38%', background: 'rgba(186, 230, 253, 0.25)', borderRadius: '50%', filter: 'blur(90px)' }} />
       </div>
 
-      <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
-
-        {/* Encabezado */}
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-          style={{ textAlign: 'center', marginBottom: '2.25rem' }}>
-          <div className="fml-chip fml-chip-brand" style={{ display: 'inline-flex', marginBottom: '.9rem' }}>
-            ♻️ &nbsp;Economía Circular
+      <div style={{ maxWidth: '1020px', margin: '0 auto' }}>
+        
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div className="fml-chip fml-chip-brand" style={{ display: 'inline-flex', marginBottom: '.75rem' }}>
+            ✦ Economía Circular
           </div>
-          <h1 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', fontWeight: 900, color: '#0F172A', margin: '0 0 .5rem', letterSpacing: '-.03em', lineHeight: 1.15 }}>
-            Publica tu <span style={{ color: '#31C2DB' }}>dispositivo</span>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.25rem)', fontWeight: 800, color: 'var(--brand-dark)', margin: '0 0 .5rem', letterSpacing: '-.03em', lineHeight: 1.15 }}>
+            Publica tu <span style={{ color: 'var(--primary)' }}>dispositivo</span>
           </h1>
-          <p style={{ color: '#94A3B8', fontWeight: 600, fontSize: '.95rem', margin: 0 }}>
+          <p style={{ color: '#64748B', fontWeight: 600, fontSize: '.9rem', margin: 0 }}>
             Comparte tecnología útil y da una segunda vida a tus equipos electrónicos
           </p>
         </motion.div>
 
-        {/* Layout principal */}
-        <div className="fml-layout" style={{ display: 'grid', gridTemplateColumns: '210px 1fr', gap: '1.5rem', alignItems: 'start' }}>
-
-          {/* Sidebar */}
-          <motion.div initial={{ opacity: 0, x: -18 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }}
-            className="fml-sidebar" style={{ position: 'sticky', top: '1.5rem' }}>
-            <div className="fml-glass" style={{ padding: '1.1rem' }}>
+        <div className="fml-layout" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+          
+          <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="fml-sidebar" style={{ position: 'sticky', top: '1.5rem' }}>
+            <div className="fml-glass" style={{ padding: '1rem' }}>
               <StepSidebar activeStep={activeStep} />
             </div>
           </motion.div>
 
-          {/* Contenido principal */}
           <div>
             <AnimatePresence mode="wait">
-              {stepPanels[activeStep]}
+              {activeStep === 0 && renderCuestionario()}
+              {activeStep === 1 && renderResultadoIA()}
+              {activeStep === 2 && renderFormPublicacion()}
             </AnimatePresence>
-
-            {/* Navegación */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1.25rem' }}>
-              <button
-                className="fml-btn-outline"
-                disabled={activeStep === 0}
-                onClick={handleBack}
-              >
-                ← Atrás
-              </button>
-
-              {activeStep < stepPanels.length - 1 ? (
-                <button
-                  className="fml-btn-primary"
-                  onClick={handleNext}
-                  disabled={
-                    (activeStep === 0 && !isPaso1Completo) ||
-                    (activeStep === 1 && !isPaso2Completo) ||
-                    (activeStep === 2 && !isPaso3Completo)
-                  }
-                >
-                  Continuar →
-                </button>
-              ) : (
-                <button className="fml-btn-primary" onClick={handleSubmit}>
-                  <PublishIcon style={{ fontSize: '1.1rem' }} /> Publicar
-                </button>
-              )}
-            </div>
           </div>
 
         </div>
+
       </div>
     </div>
   );

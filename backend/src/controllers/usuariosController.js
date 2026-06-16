@@ -30,15 +30,32 @@ const updateUsuario = async (req, res) => {
   }
 };
 
-const deleteUsuario = async (req, res) => {
+const getUsuarioById = async (req, res) => {
   const { id } = req.params;
   try {
-    await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
-    res.json({ message: 'Usuario eliminado' });
+    const { rows } = await pool.query(
+      `SELECT id, nombre, apellidos, email, rol, activo
+       FROM usuarios
+       WHERE id = $1`,
+      [id]
+    );
+    if (!rows[0]) return res.status(404).json({ message: 'Usuario no encontrado' });
+    res.json(rows[0]);
   } catch (err) {
-    console.error('Error al eliminar usuario:', err);
-    res.status(500).json({ message: 'Error al eliminar usuario' });
+    console.error('Error al obtener usuario por ID:', err);
+    res.status(500).json({ message: 'Error al obtener usuario' });
   }
 };
 
-module.exports = { getUsuarios, updateUsuario, deleteUsuario };
+const deleteUsuario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
+    res.json({ ok: true, msg: 'Usuario eliminado correctamente de ReUseTech' });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ ok: false, msg: 'Error al eliminar el usuario' });
+  }
+};
+
+module.exports = { getUsuarios, updateUsuario, deleteUsuario, getUsuarioById };

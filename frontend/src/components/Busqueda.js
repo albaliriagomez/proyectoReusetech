@@ -15,11 +15,21 @@ const Busqueda = () => {
   const navigate = useNavigate();
   const limit = 6;
 
+  const opcionesUbicacion = [
+    'Todos',
+    'Cochabamba',
+    'Quillacollo',
+    'Sacaba',
+    'Colcapirhua',
+    'Tiquipaya',
+    'Vinto',
+  ];
+
   const obtenerPublicaciones = async (reset = false) => {
     try {
-      // 💡 Solo manda filtros con valores no vacíos
+      // 💡 Solo manda filtros con valores no vacíos y omite "Todos" para el backend
       const filtrosLimpiados = Object.fromEntries(
-        Object.entries(filtros).filter(([_, valor]) => valor.trim() !== '')
+        Object.entries(filtros).filter(([_, valor]) => valor.trim() !== '' && valor !== 'Todos')
       );
   
       const res = await axios.get('http://localhost:5000/api/publicaciones', {
@@ -30,8 +40,17 @@ const Busqueda = () => {
         }
       });
   
-      if (res.data.length < limit) setHasMore(false);
-      setPublicaciones(prev => reset ? res.data : [...prev, ...res.data]);
+      const publicacionesObtenidas = Array.isArray(res.data)
+        ? res.data
+        : res.data.rows ?? [];
+
+      const publicacionesFiltradas = publicacionesObtenidas.filter(publi => {
+        if (!filtros.ubicacion || filtros.ubicacion === 'Todos') return true;
+        return publi.ubicacion?.toLowerCase().includes(filtros.ubicacion.toLowerCase());
+      });
+
+      setHasMore(publicacionesObtenidas.length >= limit);
+      setPublicaciones(prev => reset ? publicacionesFiltradas : [...prev, ...publicacionesFiltradas]);
     } catch (err) {
       console.error('Error al cargar publicaciones:', err);
     }
@@ -73,12 +92,16 @@ const Busqueda = () => {
             <option value="Reciclaje">Reciclaje</option>
             </select>
 
-            <select onChange={(e) => setFiltros({ ...filtros, ubicacion: e.target.value })} className="border p-2 rounded">
-            <option value="">Todas las ubicaciones</option>
-            <option value="Cochabamba">Cochabamba</option>
-            <option value="Cochabamba-cercado">Cochabamba-cercado</option>
-            <option value="Quillacollo">Quillacollo</option>
-            <option value="Sacaba">Sacaba</option>
+            <select
+              value={filtros.ubicacion}
+              onChange={(e) => setFiltros({ ...filtros, ubicacion: e.target.value })}
+              className="fml-select border p-2 rounded"
+            >
+              {opcionesUbicacion.map((loc) => (
+                <option key={loc} value={loc === 'Todos' ? '' : loc}>
+                  {loc}
+                </option>
+              ))}
             </select>
 
         <button onClick={aplicarFiltros} className="bg-[#5bc0de] text-white px-4 py-2 rounded hover:bg-[#31a6c4]">

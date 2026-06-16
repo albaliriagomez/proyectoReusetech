@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, LogIn, ArrowRight, Sparkles, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowRight, Sparkles, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import ilustracion from '../assets/ilustracion.svg';
 
 const Login = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [isFocused, setIsFocused] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -108,16 +109,23 @@ const Login = () => {
               <div className={`relative transition-all duration-300 ${isFocused === 'password' ? 'scale-[1.02]' : ''}`}>
                 <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isFocused === 'password' ? 'text-cyan-500' : 'text-slate-300'}`} size={20} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   onFocus={() => setIsFocused('password')}
                   onBlur={() => setIsFocused(null)}
                   value={form.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  className="w-full pl-12 pr-4 py-4 bg-slate-100/50 border-2 border-transparent focus:border-cyan-500/20 focus:bg-white rounded-[1.5rem] outline-none font-bold text-slate-700 transition-all"
+                  className="w-full pl-12 pr-12 py-4 bg-slate-100/50 border-2 border-transparent focus:border-cyan-500/20 focus:bg-white rounded-[1.5rem] outline-none font-bold text-slate-700 transition-all"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-500 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 

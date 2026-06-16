@@ -7,14 +7,24 @@ const register = async (req, res) => {
   const { nombre, apellidos, email, password, rol } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  let mappedRol = rol;
+  if (rol === 'usuario') {
+    mappedRol = 'Particular';
+  }
+
+  // Ensure it is one of the 4 homologated values
+  if (!['Particular', 'Fundacion', 'Gestor_RAEE', 'admin'].includes(mappedRol)) {
+    mappedRol = 'Particular';
+  }
+
   try {
     const result = await pool.query(
       `INSERT INTO usuarios (nombre, apellidos, email, password, rol)
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [nombre, apellidos, email, hashedPassword, rol]
+      [nombre, apellidos, email, hashedPassword, mappedRol]
     );
     // 📊 Enviar evento a InfluxDB
-    registrarEvento('registro', { rol: rol || 'usuario' }, { count: 1 });
+    registrarEvento('registro', { rol: mappedRol }, { count: 1 });
 
     res.status(201).json(result.rows[0]);
   } catch (error) {

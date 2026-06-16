@@ -65,14 +65,16 @@ function App() {
             <Route path="/login"                    element={<Login />} />
             <Route path="/register"                 element={<Register />} />
             <Route path="/home"                     element={<MainPage />} />
+            <Route path="/catalogo"                 element={<MainPage />} />
             <Route path="/perfil"                   element={<PerfilUsuario />} />
             <Route path="/mis-publicaciones/:id"    element={<MisPublicaciones />} />
             <Route path="/form"                     element={<FormPage />} />
+            <Route path="/publicar"                 element={<FormPage />} />
             {/* Soportamos ambas mayúsculas por links legacy en componentes */}
             <Route path="/detalle/:id"              element={<DetallePublicacion />} />
             <Route path="/Detalle/:id"              element={<DetallePublicacion />} />
             <Route path="/editar/:id"               element={<EditarPublicacion />} />
-            <Route path="/chat/:user1/:user2/:publicacionId" element={<ChatPrivado />} />
+            <Route path="/chat/:usuarioId/:emisorId/:publicacionId" element={<ChatPrivado />} />
             <Route path="/bandeja"                  element={<BandejaEntrada />} />
             <Route path="/soporte"                  element={<ChatIA />} />
             <Route path="/buscar"                   element={<Busqueda />} />

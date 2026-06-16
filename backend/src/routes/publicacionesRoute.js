@@ -13,11 +13,13 @@ const {
   getPublicacionesByUser,
   getAdminStats,
   getHistorialAdmin,
+  getDashboardStats,
 } = require('../controllers/publicacionesController');
 
 // ── Rutas admin protegidas por JWT ────────────────────────────────────────────
-router.get('/api/admin/stats',      verificarToken, getAdminStats);
-router.get('/api/admin/donaciones', verificarToken, getHistorialAdmin);
+router.get('/api/admin/stats',           verificarToken, getAdminStats);
+router.get('/api/admin/donaciones',      verificarToken, getHistorialAdmin);
+router.get('/api/admin/dashboard-stats', verificarToken, getDashboardStats);
 
 // Rutas específicas ANTES de la ruta con parámetro :id
 router.get('/api/publicaciones/facets', getPublicacionesFacets);

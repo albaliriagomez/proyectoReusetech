@@ -10,6 +10,12 @@ import {
   ArrowUpRight, UserCheck, UserX, Cpu,
   Globe, ChevronLeft, Menu, MapPin, Leaf, TreePine, Handshake
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts';
 
 const API = 'http://localhost:5000';
 
@@ -19,6 +25,21 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-BO',  { day: '2-di
 const fmtTime = (d) => d ? new Date(d).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' }) : '—';
 
 const ESTADO_COLOR = { 'Buen estado': '#22c55e', 'Usado': '#f59e0b', 'Reciclaje': '#ef4444' };
+
+const createMarkerIcon = (color) => {
+  const svgHtml = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+      <path fill="${color}" stroke="#ffffff" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  `;
+  return L.divIcon({
+    html: svgHtml,
+    className: 'custom-leaflet-marker',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+};
 
 // ─── Paleta corporativa ───────────────────────────────────────────────────────
 const C = {
@@ -34,14 +55,15 @@ const authHeader = () => {
   return t ? { Authorization: `Bearer ${t}` } : {};
 };
 const api = {
-  getUsers:      ()           => axios.get(`${API}/api/usuarios`).then(r => r.data),
-  deleteUser:    (id)         => axios.delete(`${API}/api/usuarios/${id}`).then(r => r.data),
-  toggleUser:    (id, activo) => axios.patch(`${API}/api/usuarios/${id}`, { activo }).then(r => r.data),
-  getPubs:       ()           => axios.get(`${API}/api/publicaciones?limit=200&page=1`).then(r => Array.isArray(r.data) ? r.data : r.data.rows),
-  deletePub:     (id)         => axios.delete(`${API}/api/publicaciones/${id}`).then(r => r.data),
-  togglePub:     (id, visible)=> axios.patch(`${API}/api/publicaciones/${id}`, { visible }).then(r => r.data),
-  getDonaciones: ()           => axios.get(`${API}/api/admin/donaciones`, { headers: authHeader() }).then(r => r.data),
-  getStats:      ()           => axios.get(`${API}/api/admin/stats`,      { headers: authHeader() }).then(r => r.data),
+  getUsers:         ()           => axios.get(`${API}/api/usuarios`).then(r => r.data),
+  deleteUser:       (id)         => axios.delete(`${API}/api/usuarios/${id}`).then(r => r.data),
+  toggleUser:       (id, activo) => axios.patch(`${API}/api/usuarios/${id}`, { activo }).then(r => r.data),
+  getPubs:          ()           => axios.get(`${API}/api/publicaciones?limit=200&page=1`).then(r => Array.isArray(r.data) ? r.data : r.data.rows),
+  deletePub:        (id)         => axios.delete(`${API}/api/publicaciones/${id}`).then(r => r.data),
+  togglePub:        (id, visible)=> axios.patch(`${API}/api/publicaciones/${id}`, { visible }).then(r => r.data),
+  getDonaciones:    ()           => axios.get(`${API}/api/admin/donaciones`, { headers: authHeader() }).then(r => r.data),
+  getStats:         ()           => axios.get(`${API}/api/admin/stats`,      { headers: authHeader() }).then(r => r.data),
+  getDashboardStats:()           => axios.get(`${API}/api/admin/dashboard-stats`, { headers: authHeader() }).then(r => r.data),
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -250,7 +272,7 @@ const SVGLineChart = ({ data = [], color = C.cyan }) => {
 // ──────────────────────────────────────────────────────────────────────────────
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
-const Dashboard = ({ stats, publicaciones, historial = [] }) => {
+const Dashboard = ({ stats, publicaciones, historial = [], dashboardStats }) => {
 
   // ── Datos derivados para los gráficos ──────────────────────────────────────
   const categoriaData = Object.entries(
@@ -295,7 +317,7 @@ const Dashboard = ({ stats, publicaciones, historial = [] }) => {
     <div className="space-y-5">
 
       {/* ── 4 KPIs principales ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard icon={<Users size={18}/>}        label="Usuarios"      value={stats.usuarios}      trend={12} color={C.cyan}    delay={0}   />
         <StatCard icon={<Package size={18}/>}       label="Publicaciones" value={stats.publicaciones}  trend={8}  color={C.purple} delay={0.05}/>
         <StatCard icon={<Handshake size={18}/>}     label="Donaciones"    value={historial.length}    trend={5}  color={C.emerald} delay={0.1} />
@@ -332,6 +354,189 @@ const Dashboard = ({ stats, publicaciones, historial = [] }) => {
           <SVGLineChart data={tendenciaData} color={C.cyan} />
         </ChartCard>
       </motion.div>
+
+      {/* ── MÓDULO DE MAPA GEORREFERENCIADO ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35 }}
+      >
+        <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+          <div className="mb-4">
+            <p className="text-sm font-black text-slate-800 font-['Plus_Jakarta_Sans']">Georreferenciación de Impacto RAEE y Donaciones</p>
+            <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest font-['Plus_Jakarta_Sans']">
+              Ubicación y ciclo de vida de los dispositivos publicados
+            </p>
+          </div>
+          
+          <div className="h-96 rounded-xl overflow-hidden border border-slate-100 relative z-10">
+            <MapContainer center={[-17.3895, -66.1568]} zoom={11} style={{ height: '100%', width: '100%' }}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {dashboardStats?.mapa?.map((point) => {
+                let markerColor = '#31C2DB'; // Activos -> Color Celeste
+                let label = 'Activo';
+                if (point.ciclo === 'donacion') {
+                  markerColor = '#10b981'; // Donado -> Color Verde
+                  label = 'Donación Concluida';
+                } else if (point.ciclo === 'reciclaje') {
+                  markerColor = '#ef4444'; // Reciclaje -> Color Rojo
+                  label = 'Reciclaje Concluido';
+                }
+
+                const customIcon = createMarkerIcon(markerColor);
+
+                return (
+                  <Marker key={point.id} position={[point.lat, point.lng]} icon={customIcon}>
+                    <Popup>
+                      <div className="font-['Plus_Jakarta_Sans'] text-slate-800 p-1">
+                        <p className="font-black text-sm mb-1">{point.titulo}</p>
+                        <div className="flex flex-wrap gap-1.5 items-center mb-1">
+                          <span 
+                            className="text-[9px] font-black px-2 py-0.5 rounded-full text-white"
+                            style={{ backgroundColor: markerColor }}
+                          >
+                            {label}
+                          </span>
+                          {point.verificado && (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                              Sello IA: ✓ Verificado
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-500">
+                          <strong>Ubicación:</strong> {point.ubicacion || '—'}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          <strong>Estado original:</strong> {point.estado || '—'}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                );
+              })}
+            </MapContainer>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── GRÁFICAS DE IMPACTO RECHARTS ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* GRÁFICA 1: Eficiencia de Procesamiento */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+            <div className="mb-4">
+              <p className="text-sm font-black text-slate-800 font-['Plus_Jakarta_Sans']">Eficiencia de Procesamiento de Equipos</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest font-['Plus_Jakarta_Sans']">
+                Total publicados vs Cerrados con éxito
+              </p>
+            </div>
+            
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={dashboardStats?.eficiencia || []}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#94a3b8" 
+                    fontSize={11} 
+                    fontFamily="Plus Jakarta Sans" 
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    stroke="#94a3b8" 
+                    fontSize={11} 
+                    fontFamily="Plus Jakarta Sans" 
+                    tickLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      fontFamily: 'Plus Jakarta Sans', 
+                      fontSize: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid #f1f5f9',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ 
+                      fontFamily: 'Plus Jakarta Sans', 
+                      fontSize: '11px',
+                      paddingTop: '10px'
+                    }}
+                  />
+                  <Bar dataKey="publicados" name="Total Publicados" fill="#31C2DB" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="exitosos" name="Cerrados con Éxito" fill="#10b981" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* GRÁFICA 2: Histórico de Transacciones Circulares */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+            <div className="mb-4">
+              <p className="text-sm font-black text-slate-800 font-['Plus_Jakarta_Sans']">Histórico de Transacciones Circulares Concluidas</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest font-['Plus_Jakarta_Sans']">
+                Conteo neto de transacciones exitosas
+              </p>
+            </div>
+            
+            <div className="h-64 flex flex-col justify-center items-center relative">
+              <ResponsiveContainer width="100%" height="80%">
+                <PieChart>
+                  <Pie
+                    data={dashboardStats?.acumulado || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    <Cell fill="#10b981" /> {/* Donados -> Emerald */}
+                    <Cell fill="#ef4444" /> {/* Reciclados -> Red */}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      fontFamily: 'Plus Jakarta Sans', 
+                      fontSize: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid #f1f5f9'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              
+              {/* Legend overlay */}
+              <div className="flex gap-4 mt-2 text-xs font-bold text-slate-600 font-['Plus_Jakarta_Sans']">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
+                  <span>Donados ({dashboardStats?.acumulado?.[0]?.value || 0})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
+                  <span>Reciclados ({dashboardStats?.acumulado?.[1]?.value || 0})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
 
     </div>
   );
@@ -529,7 +734,7 @@ const HistorialDonaciones = ({ donaciones }) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <StatCard icon={<Leaf size={18}/>}      label="CO₂ Total Evitado"    value={totalCO2}         sub="kilogramos estimados"          color="#22c55e" delay={0}/>
         <StatCard icon={<TreePine size={18}/>}  label="Árboles Equivalentes" value={totalArboles}     sub="árboles salvados (~20 kg c/u)" color="#10b981" delay={0.05}/>
         <StatCard icon={<Handshake size={18}/>} label="Intercambios Exitosos" value={donaciones.length} sub="donaciones confirmadas"        color="#31C2DB" delay={0.1}/>
@@ -670,23 +875,27 @@ const AdminPanel = () => {
   const [publicaciones, setPublicaciones] = useState([]);
   const [historial,     setHistorial]     = useState([]);
   const [mensajes,      setMensajes]      = useState(0);
+  const [dashboardStats, setDashboardStats] = useState({ mapa: [], eficiencia: [], acumulado: [] });
   const [loading,       setLoading]       = useState(true);
   const [confirm,       setConfirm]       = useState(null);
   const [toast,         setToast]         = useState(null);
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, p, h, s] = await Promise.allSettled([
+      const [u, p, h, s, ds] = await Promise.allSettled([
         api.getUsers(),
         api.getPubs(),
         api.getDonaciones(),
         api.getStats(),
+        api.getDashboardStats(),
       ]);
       if (u.status === 'fulfilled') setUsuarios(u.value);
       if (p.status === 'fulfilled') setPublicaciones(p.value);
       if (h.status === 'fulfilled') setHistorial(h.value);
       if (s.status === 'fulfilled') setMensajes(s.value.mensajes ?? 0);
+      if (ds.status === 'fulfilled') setDashboardStats(ds.value);
     } catch {}
     setLoading(false);
   }, []);
@@ -824,7 +1033,7 @@ const AdminPanel = () => {
                   <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                 </div>
                 <button title="Cerrar sesión"
-                  onClick={() => { ['token','userId','user'].forEach(k => localStorage.removeItem(k)); window.location.href='/login'; }}
+                  onClick={() => setConfirmLogoutOpen(true)}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
                   <LogOut size={14}/>
                 </button>
@@ -879,7 +1088,7 @@ const AdminPanel = () => {
               <motion.div key={section}
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
-                {section === 'dashboard'     && <Dashboard stats={stats} publicaciones={publicaciones} historial={historial}/>}
+                {section === 'dashboard'     && <Dashboard stats={stats} publicaciones={publicaciones} historial={historial} dashboardStats={dashboardStats}/>}
                 {section === 'usuarios'      && <GestionUsuarios usuarios={usuarios} onDelete={handleDelete} onToggle={handleToggleUser}/>}
                 {section === 'publicaciones' && <GestionPublicaciones publicaciones={publicaciones} onDelete={handleDelete} onToggle={handleTogglePub}/>}
                 {section === 'historial'     && <HistorialDonaciones donaciones={historial}/>}
@@ -893,6 +1102,47 @@ const AdminPanel = () => {
       {/* Modales */}
       {confirm && <Confirm msg={confirm.msg} onOk={confirm.onOk} onCancel={() => setConfirm(null)}/>}
       <AnimatePresence>{toast && <Toast msg={toast.msg} type={toast.type}/>}</AnimatePresence>
+
+      {/* MODAL DE CONFIRMACIÓN DE LOGOUT */}
+      <AnimatePresence>
+        {confirmLogoutOpen && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 shadow-xl max-w-sm w-full mx-4 border border-slate-100"
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                  <LogOut size={24} />
+                </div>
+                <h3 className="text-lg font-black text-slate-950 mb-2">¿Cerrar Sesión de Administrador?</h3>
+                <p className="text-xs text-slate-500 font-semibold mb-6">
+                  ¿Estás seguro de que deseas cerrar tu sesión en el panel de control de ReUseTech?
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button 
+                    onClick={() => setConfirmLogoutOpen(false)}
+                    className="flex-1 py-3 text-xs font-black text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      ['token','userId','user'].forEach(k => localStorage.removeItem(k));
+                      window.location.href = '/login';
+                    }}
+                    className="flex-1 py-3 text-xs font-black text-white bg-red-500 hover:bg-red-600 rounded-xl transition-all shadow-md shadow-red-200"
+                  >
+                    Cerrar Sesión
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

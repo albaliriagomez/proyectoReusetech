@@ -17,7 +17,6 @@ const upload = multer({ storage });
 const CO2_BASE = {
   'Computadoras y Accesorios': 320,
   'Teléfonos y Accesorios':     65,
-  'Electrodomésticos':          100,
   'Otros':                       50,
 };
 
@@ -33,11 +32,21 @@ const PUNTOS_ESTADO = {
   'Reciclaje':   30,
 };
 
+const MAPA_ESTADOS_IA = {
+  'PARA DONAR': 'Buen estado',
+  'PARA REPARAR': 'Usado',
+  'PARA REPUESTOS': 'Reciclaje',
+  'PARA RECICLAR': 'Reciclaje',
+};
+
 function calcularImpacto(categoria, estado) {
+  // Homologar el estado de manera defensiva en caso de que venga en formato crudo de la IA
+  const estadoHomologado = MAPA_ESTADOS_IA[estado] || estado;
+
   const co2Base            = CO2_BASE[categoria]    ?? 50;
-  const factor             = FACTOR_ESTADO[estado]  ?? 0.7;
+  const factor             = FACTOR_ESTADO[estadoHomologado]  ?? 0.7;
   const co2_evitado        = Math.round(co2Base * factor);
-  const puntos_reutilizacion = PUNTOS_ESTADO[estado] ?? 60;
+  const puntos_reutilizacion = PUNTOS_ESTADO[estadoHomologado] ?? 60;
   const arboles_equivalentes = Math.round(co2_evitado / 20);
   return { co2_evitado, puntos_reutilizacion, arboles_equivalentes };
 }
@@ -49,14 +58,30 @@ function enriquecerConImpacto(row) {
 
 const createPublicacion = async (req, res) => {
   try {
-    const { titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, autor_id } = req.body;
+    const { titulo, nombredeldispositivo, marcaoModelo, categoria, descripcion, contacto, ubicacion, autor_id, verificacion_id } = req.body;
     const foto = req.file ? req.file.filename : null;
 
-    const query = `
-    INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`;
+    // Validar verificacion_id
+    if (!verificacion_id) {
+      return res.status(400).json({ message: 'Se requiere una verificación de salud por IA válida para publicar.' });
+    }
 
-    const values = [titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id];
+    const verifResult = await pool.query(
+      'SELECT estado_calculado FROM verificaciones_salud WHERE id = $1',
+      [verificacion_id]
+    );
+
+    if (verifResult.rows.length === 0) {
+      return res.status(400).json({ message: 'La verificación de salud especificada no existe en la base de datos.' });
+    }
+
+    const estadoReal = verifResult.rows[0].estado_calculado;
+
+    const query = `
+    INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id, verificacion_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
+
+    const values = [titulo, nombredeldispositivo, marcaoModelo, categoria, estadoReal, descripcion, contacto, ubicacion, foto, autor_id, verificacion_id];
 
     const result = await pool.query(query, values);
 
@@ -66,7 +91,7 @@ const createPublicacion = async (req, res) => {
       {
         categoria: categoria || 'sin_categoria',
         ubicacion: ubicacion || 'sin_ubicacion',
-        estado:    estado    || 'sin_estado',
+        estado:    estadoReal || 'sin_estado',
       },
       { count: 1 }
     );
@@ -402,6 +427,122 @@ const getHistorialAdmin = async (req, res) => {
   }
 };
 
+const getDashboardStats = async (req, res) => {
+  if (!req.user || req.user.rol !== 'admin') {
+    return res.status(403).json({ message: 'Acceso denegado' });
+  }
+
+  try {
+    const query = `
+      SELECT
+        p.id,
+        p.titulo,
+        p.estado,
+        p.ubicacion,
+        p.verificacion_id,
+        p.usuario_receptor_id,
+        u.rol AS receptor_rol
+      FROM publicaciones p
+      LEFT JOIN usuarios u ON p.usuario_receptor_id = u.id
+    `;
+    const { rows } = await pool.query(query);
+
+    // Geolocation coordinates mapping with jitter
+    const getCoordinates = (ubicacion) => {
+      const u = (ubicacion || '').toLowerCase();
+      let lat = -17.3895, lng = -66.1568; // Cochabamba default
+      if (u.includes('quillacollo')) {
+        lat = -17.4040;
+        lng = -66.2777;
+      } else if (u.includes('cercado')) {
+        lat = -17.3935;
+        lng = -66.1598;
+      }
+      
+      // Slight offset to prevent overlapping markers
+      lat += (Math.random() - 0.5) * 0.015;
+      lng += (Math.random() - 0.5) * 0.015;
+      return { lat, lng };
+    };
+
+    const mapPoints = rows.map(r => {
+      const isDonacionConcluida = r.estado === 'Donado' && r.receptor_rol !== 'Gestor_RAEE';
+      const isReciclajeConcluido = r.estado === 'Reciclado' || 
+                                   (r.estado === 'Donado' && r.receptor_rol === 'Gestor_RAEE') ||
+                                   (r.estado === 'Reciclaje' && r.usuario_receptor_id !== null);
+
+      let ciclo = 'activo';
+      if (isDonacionConcluida) {
+        ciclo = 'donacion';
+      } else if (isReciclajeConcluido) {
+        ciclo = 'reciclaje';
+      }
+
+      const coords = getCoordinates(r.ubicacion);
+
+      return {
+        id: r.id,
+        titulo: r.titulo,
+        estado: r.estado,
+        ubicacion: r.ubicacion,
+        verificado: r.verificacion_id !== null,
+        lat: coords.lat,
+        lng: coords.lng,
+        ciclo
+      };
+    });
+
+    // Calculate chart statistics
+    let donacionPublicados = 0;
+    let donacionExitosos = 0;
+    let reciclajePublicados = 0;
+    let reciclajeExitosos = 0;
+
+    rows.forEach(r => {
+      const isReciclajeLine = r.estado === 'Reciclaje' || r.estado === 'Reciclado' || r.receptor_rol === 'Gestor_RAEE';
+      const isReciclajeConcluido = r.estado === 'Reciclado' || 
+                                   (r.estado === 'Donado' && r.receptor_rol === 'Gestor_RAEE') ||
+                                   (r.estado === 'Reciclaje' && r.usuario_receptor_id !== null);
+
+      if (isReciclajeLine) {
+        reciclajePublicados++;
+        if (isReciclajeConcluido) {
+          reciclajeExitosos++;
+        }
+      } else {
+        donacionPublicados++;
+        if (r.estado === 'Donado') {
+          donacionExitosos++;
+        }
+      }
+    });
+
+    res.json({
+      mapa: mapPoints,
+      eficiencia: [
+        {
+          name: 'Línea de Donación',
+          publicados: donacionPublicados,
+          exitosos: donacionExitosos
+        },
+        {
+          name: 'Línea de Reciclaje',
+          publicados: reciclajePublicados,
+          exitosos: reciclajeExitosos
+        }
+      ],
+      acumulado: [
+        { name: 'Donados', value: donacionExitosos },
+        { name: 'Reciclados', value: reciclajeExitosos }
+      ]
+    });
+
+  } catch (error) {
+    console.error('Error en getDashboardStats:', error);
+    res.status(500).json({ message: 'Error al obtener estadísticas del dashboard' });
+  }
+};
+
 module.exports = {
   upload,
   createPublicacion,
@@ -414,4 +555,5 @@ module.exports = {
   getPublicacionesByUser,
   getAdminStats,
   getHistorialAdmin,
+  getDashboardStats,
 };
