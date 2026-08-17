@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import AnaliticaPredictiva from './AnaliticaPredictiva';
 import {
   LayoutDashboard, Users, Package, MessageSquare, Settings,
   Trash2, Eye, EyeOff, Search, RefreshCw,
@@ -866,10 +867,12 @@ const Configuracion = () => {
 // ══════════════════════════════════════════════════════════════════════════════
 //  ADMIN PANEL — componente raíz
 // ══════════════════════════════════════════════════════════════════════════════
-const AdminPanel = () => {
+const AdminPanel = ({ initialSection = 'dashboard' }) => {
   const user = (() => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } })();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [section,       setSection]       = useState('dashboard');
+  const [section,       setSection]       = useState(initialSection);
   const [sidebarOpen,   setSidebarOpen]   = useState(true);
   const [usuarios,      setUsuarios]      = useState([]);
   const [publicaciones, setPublicaciones] = useState([]);
@@ -877,6 +880,14 @@ const AdminPanel = () => {
   const [mensajes,      setMensajes]      = useState(0);
   const [dashboardStats, setDashboardStats] = useState({ mapa: [], eficiencia: [], acumulado: [] });
   const [loading,       setLoading]       = useState(true);
+
+  useEffect(() => {
+    if (location.pathname === '/admin/analitica') {
+      setSection('analitica');
+    } else if (location.pathname === '/admin' && section === 'analitica') {
+      setSection('dashboard');
+    }
+  }, [location.pathname]);
   const [confirm,       setConfirm]       = useState(null);
   const [toast,         setToast]         = useState(null);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false);
@@ -942,6 +953,7 @@ const AdminPanel = () => {
     { id: 'usuarios',     icon: <Users size={17}/>,           label: 'Usuarios',          badge: stats.usuarios },
     { id: 'publicaciones',icon: <Package size={17}/>,         label: 'Publicaciones',     badge: stats.publicaciones },
     { id: 'historial',    icon: <Leaf size={17}/>,            label: 'Impacto Ambiental', badge: historial.length },
+    { id: 'analitica',    icon: <TrendingUp size={17}/>,      label: 'Analítica Predictiva' },
     { id: 'config',       icon: <Settings size={17}/>,        label: 'Configuración' },
   ];
 
@@ -995,7 +1007,14 @@ const AdminPanel = () => {
               {navItems.map(item => {
                 const active = section === item.id;
                 return (
-                  <button key={item.id} onClick={() => setSection(item.id)}
+                  <button key={item.id} onClick={() => {
+                      setSection(item.id);
+                      if (item.id === 'analitica') {
+                        navigate('/admin/analitica');
+                      } else {
+                        navigate('/admin');
+                      }
+                    }}
                     className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-bold transition-all"
                     style={active
                       ? { background: 'rgba(6,182,212,0.08)', color: '#0891b2', border: '1px solid rgba(6,182,212,0.18)' }
@@ -1092,6 +1111,7 @@ const AdminPanel = () => {
                 {section === 'usuarios'      && <GestionUsuarios usuarios={usuarios} onDelete={handleDelete} onToggle={handleToggleUser}/>}
                 {section === 'publicaciones' && <GestionPublicaciones publicaciones={publicaciones} onDelete={handleDelete} onToggle={handleTogglePub}/>}
                 {section === 'historial'     && <HistorialDonaciones donaciones={historial}/>}
+                {section === 'analitica'     && <AnaliticaPredictiva/>}
                 {section === 'config'        && <Configuracion/>}
               </motion.div>
             </AnimatePresence>

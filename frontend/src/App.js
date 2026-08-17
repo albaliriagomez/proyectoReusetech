@@ -57,6 +57,15 @@ function App() {
               />
             }
           />
+          <Route
+            path="/admin/analitica"
+            element={
+              <ProtectedRoute
+                element={<AdminPanel initialSection="analitica" />}
+                requiredRole="admin"
+              />
+            }
+          />
 
           {/* ── RUTAS PÚBLICAS / DE USUARIO: llevan Navbar ──────────────── */}
           <Route element={<UserLayout />}>
