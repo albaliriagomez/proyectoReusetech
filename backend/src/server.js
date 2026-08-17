@@ -80,7 +80,23 @@ io.on('connection', (socket) => {
   });
 });
 
+// ── Migraciones de Base de Datos ────────────────────────────────────────────────
+const { runMigrations } = require('./config/migrate');
+
 // ── Arrancar servidor ─────────────────────────────────────────────────────────
-server.listen(port, () => {
-  console.log(` Servidor con Socket.IO en http://localhost:${port}`);
-});
+const startServer = async () => {
+  try {
+    console.log('🔄 Verificando migraciones de base de datos...');
+    await runMigrations();
+  } catch (err) {
+    console.error('⚠️ Error durante la comprobación de migraciones al arranque:', err.message || err);
+    console.error('ℹ️ El servidor continuará arrancando para permitir diagnóstico.');
+  }
+
+  server.listen(port, () => {
+    console.log(`🚀 Servidor con Socket.IO en http://localhost:${port}`);
+  });
+};
+
+startServer();
+
