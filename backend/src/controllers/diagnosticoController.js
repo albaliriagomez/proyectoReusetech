@@ -16,7 +16,8 @@ const diagnosticoIA = async (req, res) => {
 
   try {
     // Llamar al servicio ML de Python usando fetch nativo
-    const response = await fetch('http://localhost:5001/predict', {
+    const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:5001';
+    const response = await fetch(`${aiUrl}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
