@@ -58,6 +58,8 @@ const injectStyles = () => {
     @media (max-width: 768px) {
       .fml-layout { grid-template-columns: 1fr !important; }
       .fml-sidebar { position: relative !important; top: 0 !important; margin-bottom: 1rem; }
+      .fml-glass { padding: 1.25rem !important; }
+      .fml-cert-seal { flex-direction: column !important; text-align: center !important; }
     }
 
     .fml-glass {
@@ -684,7 +686,7 @@ const Formulario = () => {
 
           <div className="fml-divider" />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '2rem', alignItems: 'start', marginBottom: '1.5rem' }}>
+          <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-6 items-start mb-6">
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="fml-cert-seal" style={{ padding: '.85rem' }}>
@@ -826,7 +828,7 @@ const Formulario = () => {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             
-            <div className="fml-grid2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.1rem' }}>
+            <div className="fml-grid2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Título de la publicación">
                 <input className="fml-input" name="titulo" value={formData.titulo} onChange={handleChange} placeholder="Ej. Laptop HP EliteBook para donar" required />
               </Field>

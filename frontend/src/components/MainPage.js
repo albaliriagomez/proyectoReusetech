@@ -568,7 +568,7 @@ const MainPage = () => {
       </div>
 
       {/* ── LAYOUT PRINCIPAL ───────────────────────────────────── */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 flex gap-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 pb-28 md:pb-8 flex gap-8">
 
         {/* ── SIDEBAR FILTROS (Desktop) ───────────────────────── */}
         <AnimatePresence>
@@ -745,7 +745,8 @@ const MainPage = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileDrawerOpen(false)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 md:hidden"
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[99998] md:hidden"
+              style={{ zIndex: 99998 }}
             />
             {/* Drawer */}
             <motion.div
@@ -753,7 +754,8 @@ const MainPage = () => {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed inset-x-0 bottom-0 max-h-[85vh] bg-white rounded-t-[2.5rem] shadow-2xl z-50 p-6 overflow-y-auto md:hidden"
+              className="fixed inset-x-0 bottom-0 max-h-[85vh] bg-white rounded-t-[2.5rem] shadow-2xl z-[99999] p-6 overflow-y-auto md:hidden"
+              style={{ backgroundColor: '#ffffff', opacity: 1, zIndex: 99999 }}
             >
               {/* Handle bar to pull down */}
               <div 

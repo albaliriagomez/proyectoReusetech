@@ -753,7 +753,7 @@ const EscanerInteligente = () => {
                 )}
               </div>
 
-              <div style={{ display: "flex", gap: ".85rem" }}>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button className="rc-btn-outline" onClick={() => fileInputRef.current.click()}>
                   <FaCamera size={14} /> Cargar imagen
                 </button>
