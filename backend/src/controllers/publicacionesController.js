@@ -204,6 +204,8 @@ const getPublicaciones = async (req, res) => {
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 12)); // máx 50 por seguridad
     const offset   = (pageNum - 1) * limitNum;
 
+    // ── Construcción dinámica de la query ────────────────────────────────────
+    const values = [];
     // El catálogo público únicamente muestra publicaciones activas y disponibles (no donadas/entregadas/completadas)
     const filters = [
       "COALESCE(visible, true) = true",
