@@ -42,32 +42,41 @@ CREATE TABLE IF NOT EXISTS publicaciones (
     ubicacion VARCHAR(255),
     foto VARCHAR(255),
     autor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
-    verificacion_id INTEGER REFERENCES verificaciones_salud(id),
+    fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    visible BOOLEAN DEFAULT true,
     usuario_receptor_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
     fecha_donacion TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    visible BOOLEAN DEFAULT true,
-    fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    verificacion_id INTEGER REFERENCES verificaciones_salud(id)
 );
 
 -- 5. Tabla de Mensajes (Chat entre usuarios)
 CREATE TABLE IF NOT EXISTS mensajes (
     id SERIAL PRIMARY KEY,
-    remitente_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    destinatario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
+    remitente_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+    destinatario_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
+    publicacion_id INTEGER REFERENCES publicaciones(id) ON DELETE CASCADE,
     contenido TEXT NOT NULL,
     leido BOOLEAN DEFAULT false,
     fecha_envio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Asegurar nulabilidad si la tabla mensajes ya fue creada con restricción NOT NULL en ejecuciones previas
+ALTER TABLE mensajes ALTER COLUMN destinatario_id DROP NOT NULL;
+ALTER TABLE mensajes ALTER COLUMN remitente_id DROP NOT NULL;
+ALTER TABLE mensajes ALTER COLUMN publicacion_id DROP NOT NULL;
+
 -- 6. Tabla de Comentarios
 CREATE TABLE IF NOT EXISTS comentarios (
     id SERIAL PRIMARY KEY,
-    publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE,
-    autor_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    publicacion_id INTEGER REFERENCES publicaciones(id) ON DELETE CASCADE,
+    autor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
     contenido TEXT NOT NULL,
     fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Asegurar nulabilidad si la tabla comentarios ya fue creada con restricción NOT NULL en ejecuciones previas
+ALTER TABLE comentarios ALTER COLUMN publicacion_id DROP NOT NULL;
+ALTER TABLE comentarios ALTER COLUMN autor_id DROP NOT NULL;
 
 -- 7. Índices para optimizar búsquedas y consultas frecuentes
 CREATE INDEX IF NOT EXISTS idx_publicaciones_autor ON publicaciones(autor_id);
@@ -77,8 +86,4 @@ CREATE INDEX IF NOT EXISTS idx_mensajes_publicacion ON mensajes(publicacion_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_remitente_destinatario ON mensajes(remitente_id, destinatario_id);
 CREATE INDEX IF NOT EXISTS idx_comentarios_publicacion ON comentarios(publicacion_id);
 
--- 8. Inserción idempotente de usuario Administrador semilla por defecto
--- Contraseña por defecto: admin123 (hash bcrypt)
-INSERT INTO usuarios (nombre, apellidos, email, password, rol)
-VALUES ('Admin', 'ReUseTech', 'admin@gmail.com', '$2a$10$wT42S4L1sH8d1Yx2b8P/O.k9z5G/1Z4u2d8d8d8d8d8d8d8d8d8d8', 'admin')
-ON CONFLICT (email) DO NOTHING;
+

@@ -24,4 +24,4 @@ frontend/dist/
 # Carpetas del sistema o editores
 .DS_Store
 .vscode/
-.idea/
+.idea/"*.sql" 
