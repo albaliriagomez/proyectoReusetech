@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS publicaciones (
     contacto VARCHAR(255),
     ubicacion VARCHAR(255),
     foto VARCHAR(255),
+    imagen_url VARCHAR(500),
     autor_id INTEGER REFERENCES usuarios(id) ON DELETE CASCADE,
     fecha TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     visible BOOLEAN DEFAULT true,

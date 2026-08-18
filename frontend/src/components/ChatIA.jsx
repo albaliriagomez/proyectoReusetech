@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Bot, User, Sparkles, ShieldCheck, Zap } from "lucide-react";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+
 export default function ChatIA() {
   const [userInput, setUserInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
@@ -27,24 +29,38 @@ export default function ChatIA() {
     setIsLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
-      const response = await fetch(`${backendUrl}/api/chatbot`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensaje: prompt })
-      });
-      
+      let response;
+      try {
+        response = await fetch(`${API_BASE_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mensaje: prompt, prompt })
+        });
+      } catch (e) {
+        response = await fetch(`${API_BASE_URL}/api/chatbot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mensaje: prompt, prompt })
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error(`Error en el servidor de IA (${response.status})`);
+      }
+
       const data = await response.json();
-      
-      if (data.respuesta) {
-        setChatHistory((prev) => [...prev, { sender: "bot", text: data.respuesta }]);
+      const respuestaIA = data.respuesta || data.reply || data.message;
+
+      if (respuestaIA) {
+        setChatHistory((prev) => [...prev, { sender: "bot", text: respuestaIA }]);
       } else {
-        throw new Error("No hay respuesta");
+        throw new Error("No hay respuesta válida de la IA");
       }
     } catch (error) {
+      console.error("Error al conectar con la IA:", error);
       setChatHistory((prev) => [
         ...prev,
-        { sender: "bot", text: "❌ **Error de conexión**: No pude contactar con mi cerebro digital. Revisa si el backend está encendido." },
+        { sender: "bot", text: "❌ **Error de conexión**: No se pudo contactar con el servidor de IA en Render. Revisa tu conexión o reintenta más tarde." },
       ]);
     } finally {
       setIsLoading(false);

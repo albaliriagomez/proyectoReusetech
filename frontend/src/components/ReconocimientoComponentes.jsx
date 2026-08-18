@@ -703,10 +703,15 @@ const EscanerInteligente = () => {
               borderRadius: "0 0 2rem 2rem",
               padding: "1.75rem",
             }}>
-              <div className="rc-viewer" style={{ marginBottom: "1.25rem" }}>
+              <div className="rc-viewer w-full overflow-hidden" style={{ marginBottom: "1.25rem", overflow: "hidden", width: "100%" }}>
                 {preview ? (
                   <>
-                    <img src={preview} alt="Dispositivo" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                    <img
+                      src={preview}
+                      alt="Dispositivo"
+                      className="max-w-full h-auto object-contain"
+                      style={{ maxWidth: "100%", height: "auto", objectFit: "contain" }}
+                    />
                     {loading && (
                       <div className="rc-overlay">
                         <div className="rc-spinner" />

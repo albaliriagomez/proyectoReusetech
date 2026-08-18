@@ -64,9 +64,17 @@ const parseId = (val) => {
 
 const createPublicacion = async (req, res) => {
   try {
+    console.log('📸 Datos de imagen recibidos:', { file: req.file, body_imagen: req.body.imagen, body_imagen_url: req.body.imagen_url });
     console.log('📦 [CREATE PUBLICACION] req.body:', req.body);
     const { titulo, nombredeldispositivo, marcaoModelo, categoria, descripcion, contacto, ubicacion, autor_id, verificacion_id, usuario_id, categoria_id } = req.body;
-    const foto = req.file ? req.file.filename : null;
+    
+    // Obtener URL/Path de la imagen desde Multer/Cloudinary o req.body (URL String / base64)
+    let imagenFinal = null;
+    if (req.file) {
+      imagenFinal = req.file.path || req.file.secure_url || req.file.filename || null;
+    } else {
+      imagenFinal = req.body.imagen_url || req.body.imagen || req.body.foto || null;
+    }
 
     const autorIdParsed = parseId(autor_id || usuario_id);
     const verificacionIdParsed = parseId(verificacion_id);
@@ -88,8 +96,8 @@ const createPublicacion = async (req, res) => {
     const estadoReal = verifResult.rows[0].estado_calculado;
 
     const query = `
-    INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id, verificacion_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
+    INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, imagen_url, autor_id, verificacion_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`;
 
     const cleanStr = (val) => (Array.isArray(val) ? val[0] : val);
 
@@ -102,7 +110,8 @@ const createPublicacion = async (req, res) => {
       cleanStr(descripcion),
       cleanStr(contacto),
       cleanStr(ubicacion),
-      foto,
+      imagenFinal,
+      imagenFinal,
       autorIdParsed,
       verificacionIdParsed
     ];

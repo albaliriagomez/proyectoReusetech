@@ -140,15 +140,17 @@ const Navbar = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9998] lg:hidden"
+              style={{ zIndex: 9998 }}
             />
-            {/* Drawer */}
+            {/* Contenedor del menú móvil */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-80 bg-white shadow-2xl z-50 p-6 flex flex-col justify-between lg:hidden"
+              className="fixed top-0 right-0 h-full w-full sm:w-80 shadow-2xl z-[9999] p-6 flex flex-col justify-between lg:hidden"
+              style={{ backgroundColor: '#ffffff', zIndex: 9999, width: '100%', maxWidth: '320px' }}
             >
               <div>
                 {/* Header Drawer */}
@@ -174,14 +176,14 @@ const Navbar = () => {
                   </div>
                 )}
 
-                {/* Enlaces de Navegación */}
-                <div className="flex flex-col gap-1.5 overflow-y-auto max-h-[50vh]">
+                {/* Enlaces de Navegación (Layout en columna con padding) */}
+                <div className="flex flex-col gap-2 overflow-y-auto max-h-[55vh] py-1">
                   {navItems.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold transition-all ${
                         item.isAdmin
                           ? isActive(item.path)
                             ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
@@ -198,7 +200,7 @@ const Navbar = () => {
               </div>
 
               {/* Botón Cerrar Sesión / Login al pie */}
-              <div className="pt-6 border-t border-slate-100">
+              <div className="pt-6 border-t border-slate-100 mt-4">
                 {user ? (
                   <button
                     onClick={() => {
