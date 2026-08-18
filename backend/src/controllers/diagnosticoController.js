@@ -16,8 +16,11 @@ const diagnosticoIA = async (req, res) => {
 
   try {
     // Llamar al servicio ML de Python usando fetch nativo
-    const aiUrl = process.env.AI_SERVICE_URL || process.env.PYTHON_SERVICE_URL || 'https://reusetech-ai-service.onrender.com';
-    const response = await fetch(`${aiUrl}/predict`, {
+    const baseUrl = process.env.AI_SERVICE_URL || process.env.PYTHON_SERVICE_URL || 'https://reusetech-ai-service.onrender.com';
+    const aiEndpoint = `${baseUrl.replace(/\/$/, '')}/predict`;
+    console.log("Llamando a IA en:", aiEndpoint);
+
+    const response = await fetch(aiEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
