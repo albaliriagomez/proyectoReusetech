@@ -52,8 +52,13 @@ const injectStyles = () => {
       --sidebar-active-text: #0891B2;
       --bar-fill: #06B6D4;
     }
-    .fml { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .fml { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
     .fml *, .fml *::before, .fml *::after { box-sizing: border-box; }
+
+    @media (max-width: 768px) {
+      .fml-layout { grid-template-columns: 1fr !important; }
+      .fml-sidebar { position: relative !important; top: 0 !important; margin-bottom: 1rem; }
+    }
 
     .fml-glass {
       background: var(--bg-white);
@@ -918,7 +923,7 @@ const Formulario = () => {
 
   // ── Render General ──
   return (
-    <div className="fml" style={{ minHeight: '100vh', padding: '2.5rem 1rem 5rem', background: 'linear-gradient(160deg, #F0F9FF 0%, #FFFFFF 60%, #E0F2FE 100%)' }}>
+    <div className="fml w-full max-w-full overflow-x-hidden px-4 sm:px-6 md:px-8" style={{ minHeight: '100vh', padding: '2rem 1rem 5rem', background: 'linear-gradient(160deg, #F0F9FF 0%, #FFFFFF 60%, #E0F2FE 100%)' }}>
       
       <div style={{ position: 'fixed', inset: 0, zIndex: -1, overflow: 'hidden', pointerEvents: 'none' }}>
         <div style={{ position: 'absolute', top: '-10%', left: '-8%', width: '42%', height: '42%', background: 'rgba(186, 230, 253, 0.35)', borderRadius: '50%', filter: 'blur(90px)' }} />
@@ -939,7 +944,7 @@ const Formulario = () => {
           </p>
         </motion.div>
 
-        <div className="fml-layout" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+        <div className="fml-layout grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 items-start">
           
           <motion.div initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.05 }} className="fml-sidebar" style={{ position: 'sticky', top: '1.5rem' }}>
             <div className="fml-glass" style={{ padding: '1rem' }}>

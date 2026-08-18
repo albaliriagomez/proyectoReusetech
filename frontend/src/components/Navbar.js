@@ -150,7 +150,7 @@ const Navbar = () => {
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 h-full w-full sm:w-80 shadow-2xl z-[9999] p-6 flex flex-col justify-between lg:hidden"
-              style={{ backgroundColor: '#ffffff', zIndex: 9999, width: '100%', maxWidth: '320px' }}
+              style={{ backgroundColor: '#ffffff', zIndex: 9999, width: '100%' }}
             >
               <div>
                 {/* Header Drawer */}

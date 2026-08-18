@@ -16,8 +16,14 @@ const injectStyles = () => {
   s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 
-    .rc { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .rc { font-family: 'Plus Jakarta Sans', sans-serif; overflow-x: hidden; }
     .rc *, .rc *::before, .rc *::after { box-sizing: border-box; }
+
+    @media (max-width: 768px) {
+      .rc-layout { grid-template-columns: 1fr !important; }
+      .rc-viewer { height: auto !important; max-height: 350px !important; min-height: 240px !important; }
+      .rc-header { padding: 1.5rem 1.25rem !important; }
+    }
 
     .rc-header {
       background: #0F172A;
@@ -32,6 +38,7 @@ const injectStyles = () => {
       overflow: hidden;
       position: relative;
       height: 400px;
+      width: 100%;
       display: flex; align-items: center; justify-content: center;
     }
 
@@ -646,7 +653,7 @@ const EscanerInteligente = () => {
     : 0;
 
   return (
-    <div className="rc" style={{ minHeight: "100vh", background: C.bg, padding: "2.5rem 1rem 5rem", position: "relative" }}>
+    <div className="rc w-full max-w-full overflow-x-hidden px-4 sm:px-6 md:px-8" style={{ minHeight: "100vh", background: C.bg, padding: "2rem 1rem 5rem", position: "relative" }}>
 
       <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden", pointerEvents: "none" }}>
         <div style={{ position: "absolute", top: "-10%", right: "-5%", width: "40%", height: "40%", background: "rgba(49,194,219,.1)", borderRadius: "50%", filter: "blur(110px)" }} />
@@ -693,7 +700,7 @@ const EscanerInteligente = () => {
         </motion.div>
 
         {/* ── LAYOUT ── */}
-        <div className="rc-layout" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", alignItems: "start" }}>
+        <div className="rc-layout grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
 
           {/* ── COLUMNA IZQUIERDA: VISOR + SUGERENCIAS DE FOTOS ── */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>

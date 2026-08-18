@@ -505,14 +505,14 @@ const MainPage = () => {
   });
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen font-['Plus_Jakarta_Sans']">
+    <div className="bg-[#f8fafc] min-h-screen font-['Plus_Jakarta_Sans'] w-full max-w-full overflow-x-hidden">
 
       {/* ── HERO ────────────────────────────────────────────────── */}
       <div className="relative bg-white border-b border-slate-100 overflow-hidden">
         <div className="absolute top-[-40%] right-[-10%] w-[500px] h-[500px] rounded-full blur-[140px] opacity-15 pointer-events-none"
           style={{ background: '#31C2DB' }} />
 
-        <div className="max-w-[1600px] mx-auto px-6 pt-10 pb-0 relative z-10">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-10 pb-0 relative z-10">
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest mb-5 border"
             style={{ background: 'rgba(49,194,219,0.08)', borderColor: 'rgba(49,194,219,0.25)', color: '#31C2DB' }}>
@@ -521,10 +521,10 @@ const MainPage = () => {
 
           <div className="flex flex-col lg:flex-row justify-between items-end gap-6 pb-5">
             <div>
-              <h1 className="text-4xl md:text-5xl font-[900] text-slate-900 tracking-tight leading-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-[900] text-slate-900 tracking-tight leading-tight">
                 Explorar <span style={{ color: '#31C2DB' }}>Tecnología</span>
               </h1>
-              <p className="text-slate-500 mt-2 font-medium text-lg">
+              <p className="text-slate-500 mt-2 font-medium text-base sm:text-lg">
                 {total > 0 ? `${total.toLocaleString()} equipos disponibles` : 'Encuentra equipos listos para brillar de nuevo'}
               </p>
             </div>
@@ -553,7 +553,7 @@ const MainPage = () => {
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 pb-4 border-b border-slate-50">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 pb-4 border-b border-slate-50">
             {[
               { icon: <Package size={13} />, label: `${equiposVisibles.length} cargados` },
               { icon: <TrendingUp size={13} />, label: 'Actualizado hoy' },
@@ -568,7 +568,7 @@ const MainPage = () => {
       </div>
 
       {/* ── LAYOUT PRINCIPAL ───────────────────────────────────── */}
-      <div className="max-w-[1600px] mx-auto px-6 py-8 flex gap-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-8 flex gap-8">
 
         {/* ── SIDEBAR FILTROS (Desktop) ───────────────────────── */}
         <AnimatePresence>
