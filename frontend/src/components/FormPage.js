@@ -283,11 +283,60 @@ const PREGUNTAS = [
   }
 ];
 
+// ─── Helper Compresión de Imagen en Cliente (Evita Network Error en Móviles) ────
+const compressImage = (file, maxWidth = 1200, quality = 0.8) => {
+  return new Promise((resolve) => {
+    if (!file || !(file instanceof File) || !file.type || !file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            console.log(`📸 Imagen optimizada en cliente: ${(file.size / 1024).toFixed(1)}KB ➔ ${(compressedFile.size / 1024).toFixed(1)}KB (${width}x${height}px)`);
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => resolve(file);
+    };
+    reader.onerror = () => resolve(file);
+  });
+};
+
 // ─── Componente principal ─────────────────────────────────────────────
 const Formulario = () => {
   useEffect(() => { injectStyles(); }, []);
 
   const [activeStep, setActiveStep] = useState(0);
+  const [subiendo, setSubiendo] = useState(false);
+  const [estadoSubida, setEstadoSubida] = useState('');
   
   const [currentQ, setCurrentQ] = useState(0);
   const [qaData, setQaData] = useState({
@@ -425,17 +474,32 @@ const Formulario = () => {
   // ── Dropzone ────────────────────────────────────────────────────────
   const { getRootProps, getInputProps } = useDropzone({
     accept: { 'image/*': [] },
-    onDrop: (acceptedFiles) => {
+    onDrop: async (acceptedFiles) => {
       if (acceptedFiles.length === 0) {
         alert('Por favor, sube una imagen válida.');
         return;
       }
-      const file = acceptedFiles[0];
-      setFormData(prev => ({
-        ...prev,
-        foto: file,
-        fotoPreview: URL.createObjectURL(file)
-      }));
+      const rawFile = acceptedFiles[0];
+      setSubiendo(true);
+      setEstadoSubida('Optimizando imagen...');
+      try {
+        const compressedFile = await compressImage(rawFile, 1200, 0.8);
+        setFormData(prev => ({
+          ...prev,
+          foto: compressedFile,
+          fotoPreview: URL.createObjectURL(compressedFile)
+        }));
+      } catch (err) {
+        console.error('Error al comprimir la imagen:', err);
+        setFormData(prev => ({
+          ...prev,
+          foto: rawFile,
+          fotoPreview: URL.createObjectURL(rawFile)
+        }));
+      } finally {
+        setSubiendo(false);
+        setEstadoSubida('');
+      }
     }
   });
 
@@ -513,6 +577,8 @@ const Formulario = () => {
   // ── Submit final ────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
+    if (subiendo) return;
+
     const usuario = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
     if (!usuario || !usuario.id) {
       alert('Debes iniciar sesión para publicar');
@@ -531,25 +597,34 @@ const Formulario = () => {
       return;
     }
 
-    const form = new FormData();
-    Object.keys(formData).forEach(key => {
-      if (key !== 'fotoPreview') form.append(key, formData[key]);
-    });
-    form.append('autor_id', usuario.id);
-    form.append('verificacion_id', diagnosticoResult.verificacion_id);
+    setSubiendo(true);
+    setEstadoSubida('Subiendo imagen y publicando dispositivo...');
 
     try {
-      const loadingIndicator = document.createElement('div');
-      loadingIndicator.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;justify-content:center;align-items:center;z-index:9999;';
-      loadingIndicator.innerHTML = '<div style="background:white;padding:20px;border-radius:10px;text-align:center;font-family:sans-serif;"><h3>Publicando dispositivo certificado...</h3></div>';
-      document.body.appendChild(loadingIndicator);
+      // Garantizar compresión previa al envío (ancho max 1200px, calidad 0.8)
+      const fotoFinal = (formData.foto instanceof File)
+        ? await compressImage(formData.foto, 1200, 0.8)
+        : formData.foto;
+
+      const form = new FormData();
+      Object.keys(formData).forEach(key => {
+        if (key === 'foto') {
+          form.append('foto', fotoFinal);
+        } else if (key !== 'fotoPreview') {
+          form.append(key, formData[key]);
+        }
+      });
+      form.append('autor_id', usuario.id);
+      if (diagnosticoResult?.verificacion_id) {
+        form.append('verificacion_id', diagnosticoResult.verificacion_id);
+      }
 
       await axios.post(`${backendUrl}/api/publicaciones`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 45000, // Timeout de 45 segundos para prevenir Network Error en conexiones móviles lentas
       });
 
-      document.body.removeChild(loadingIndicator);
-      alert('Dispositivo publicado con éxito en el catálogo');
+      alert('¡Dispositivo publicado con éxito en el catálogo!');
       
       setFormData({
         titulo: '', nombredeldispositivo: '', marcaoModelo: '',
@@ -562,7 +637,14 @@ const Formulario = () => {
       setActiveStep(0);
     } catch (error) {
       console.error('Error al publicar:', error);
-      alert('Error al publicar: ' + (error.response?.data?.message || error.message));
+      const isTimeout = error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout');
+      const mensajeError = isTimeout
+        ? 'La conexión tardó demasiado. Por favor verifica tu red e intenta de nuevo.'
+        : (error.response?.data?.message || error.message);
+      alert('Error al publicar: ' + mensajeError);
+    } finally {
+      setSubiendo(false);
+      setEstadoSubida('');
     }
   };
 
@@ -910,11 +992,32 @@ const Formulario = () => {
           <div className="fml-divider" />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <button className="fml-btn-outline" onClick={() => setActiveStep(1)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+            <button className="fml-btn-outline" onClick={() => setActiveStep(1)} disabled={subiendo} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', opacity: subiendo ? 0.6 : 1 }}>
               <ArrowLeft size={16} /> Ver Auditoría
             </button>
-            <button className="fml-btn-primary" onClick={handleSubmit} disabled={!isPublishFormReady} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-              Publicar Dispositivo Certificado <ArrowRight size={16} />
+            <button
+              className="fml-btn-primary"
+              onClick={handleSubmit}
+              disabled={!isPublishFormReady || subiendo}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                opacity: (!isPublishFormReady || subiendo) ? 0.6 : 1,
+                cursor: (!isPublishFormReady || subiendo) ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {subiendo ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>{estadoSubida || 'Subiendo imagen...'}</span>
+                </>
+              ) : (
+                <>
+                  <span>Publicar Dispositivo Certificado</span>
+                  <ArrowRight size={16} />
+                </>
+              )}
             </button>
           </div>
 
@@ -965,6 +1068,28 @@ const Formulario = () => {
         </div>
 
       </div>
+
+      {/* OVERLAY DE FEEDBACK VISUAL DE CARGA */}
+      <AnimatePresence>
+        {subiendo && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2rem] p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-4 border border-slate-100"
+            >
+              <div className="w-16 h-16 bg-cyan-50 rounded-2xl flex items-center justify-center text-cyan-500 border border-cyan-100">
+                <Loader2 size={36} className="animate-spin text-cyan-500" />
+              </div>
+              <div>
+                <h4 className="font-extrabold text-slate-800 text-lg mb-1">Subiendo Dispositivo</h4>
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">{estadoSubida || 'Optimizando foto y procesando datos...'}</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
