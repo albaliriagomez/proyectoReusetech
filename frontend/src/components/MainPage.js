@@ -22,9 +22,10 @@ const CATEGORIAS = [
 ];
 
 const ESTADOS = [
-  { value: 'Buen estado', color: '#22c55e', dot: true },
-  { value: 'Usado',       color: '#f59e0b', dot: true },
-  { value: 'Reciclaje',   color: '#ef4444', dot: true },
+  { value: 'Buen estado',    color: '#22c55e', dot: true },
+  { value: 'Usado',          color: '#f59e0b', dot: true },
+  { value: 'Para repuestos', color: '#8b5cf6', dot: true },
+  { value: 'Reciclaje',      color: '#ef4444', dot: true },
 ];
 
 const opcionesUbicacion = [
@@ -494,14 +495,13 @@ const MainPage = () => {
     }
   })();
 
-  const equiposVisibles = publicaciones.filter(equipo => {
-    if (user && user.rol === 'Gestor_RAEE') {
-      // Las empresas de reciclaje técnico SOLO ven equipos destinados a la minería urbana
-      return equipo.estado === 'Reciclaje';
-    } else {
-      // Los usuarios particulares y las Fundaciones/Escuelas SOLO ven equipos funcionales
-      return equipo.estado === 'Buen estado' || equipo.estado === 'Usado';
-    }
+  const equiposVisibles = publicaciones.filter(pub => {
+    if (!pub) return false;
+    const estadoLower = (pub.estado || '').toLowerCase();
+    const disponibilidad = (pub.estado_disponibilidad || '').toLowerCase();
+    const esDonado = estadoLower === 'donado' || estadoLower === 'entregado' || estadoLower === 'completado';
+    const esDisponible = pub.visible !== false && (disponibilidad === '' || disponibilidad === 'disponible' || disponibilidad === 'true');
+    return !esDonado && esDisponible;
   });
 
   return (

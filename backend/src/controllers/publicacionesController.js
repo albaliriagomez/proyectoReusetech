@@ -68,10 +68,10 @@ const createPublicacion = async (req, res) => {
     console.log('📦 [CREATE PUBLICACION] req.body:', req.body);
     const { titulo, nombredeldispositivo, marcaoModelo, categoria, descripcion, contacto, ubicacion, autor_id, verificacion_id, usuario_id, categoria_id } = req.body;
     
-    // Obtener URL/Path de la imagen desde Multer/Cloudinary o req.body (URL String / base64)
+    // Guardar únicamente el nombre del archivo (req.file.filename) en la BD
     let imagenFinal = null;
     if (req.file) {
-      imagenFinal = req.file.path || req.file.secure_url || req.file.filename || null;
+      imagenFinal = req.file.filename || req.file.path || null;
     } else {
       imagenFinal = req.body.imagen_url || req.body.imagen || req.body.foto || null;
     }
@@ -204,10 +204,11 @@ const getPublicaciones = async (req, res) => {
     const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 12)); // máx 50 por seguridad
     const offset   = (pageNum - 1) * limitNum;
 
-    // ── Construcción dinámica de la query ────────────────────────────────────
-    const values = [];
-    // El catálogo público nunca muestra publicaciones ya donadas
-    const filters = ["estado IS DISTINCT FROM 'Donado'"];
+    // El catálogo público únicamente muestra publicaciones activas y disponibles (no donadas/entregadas/completadas)
+    const filters = [
+      "COALESCE(visible, true) = true",
+      "LOWER(estado) NOT IN ('donado', 'entregado', 'completado')"
+    ];
 
     // Full-text search (PostgreSQL ts_vector)
     // Busca en titulo, descripcion y marcaoModelo con operador de prefijo (prefix match)
@@ -333,9 +334,10 @@ const getPublicacionById = async (req, res) => {
 
 const getPublicacionesByUser = async (req, res) => {
   const { userId } = req.params;
+  const parsedId = parseId(userId);
   try {
-    const query = 'SELECT * FROM publicaciones WHERE autor_id = $1 ORDER BY id DESC';
-    const result = await pool.query(query, [userId]);
+    const query = 'SELECT * FROM publicaciones WHERE autor_id = $1 OR usuario_receptor_id = $1 ORDER BY id DESC';
+    const result = await pool.query(query, [parsedId]);
     res.status(200).json(result.rows.map(enriquecerConImpacto));
   } catch (error) {
     console.error('Error al obtener publicaciones del usuario:', error);
