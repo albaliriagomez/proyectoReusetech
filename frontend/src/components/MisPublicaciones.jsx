@@ -21,6 +21,22 @@ const MODAL_INITIAL = {
   confirmando:       false,
 };
 
+const getImagenUrl = (pub) => {
+  if (!pub) return '/placeholder.png';
+  const img = pub.imagen_url || pub.imagen || pub.foto || pub.imagenUrl || pub.foto_url || pub.image;
+  if (!img) return '/placeholder.png';
+  if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
+    return img;
+  }
+  if (typeof img === 'string' && img.startsWith('/uploads/')) {
+    return `${API}${img}`;
+  }
+  if (typeof img === 'string' && img.startsWith('/')) {
+    return `${API}${img}`;
+  }
+  return `${API}/uploads/${img}`;
+};
+
 const MisPublicaciones = () => {
   const [publicaciones, setPublicaciones] = useState([]);
   const [isLoading,     setIsLoading]     = useState(true);
@@ -193,17 +209,12 @@ const MisPublicaciones = () => {
               >
                 {/* IMAGEN */}
                 <div className="relative h-56 overflow-hidden">
-                  {pub.foto ? (
-                    <img
-                      src={`${API}/uploads/${pub.foto}`}
-                      alt={pub.titulo}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-300">
-                      <ImageIcon size={48} />
-                    </div>
-                  )}
+                  <img
+                    src={getImagenUrl(pub)}
+                    alt={pub.titulo || 'Publicación'}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
+                  />
 
                   {/* Badge de categoría */}
                   <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-[#5bc0de] text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-sm">

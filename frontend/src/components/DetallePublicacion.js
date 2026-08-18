@@ -38,6 +38,23 @@ const DetallePublicacion = () => {
   })();
   const remitente_id = user?.id;
 
+  // Helper to resolve publication image URL correctly
+  const getImagenUrl = (item) => {
+    if (!item) return '/placeholder.png';
+    const img = item.imagen_url || item.imagen || item.foto || item.imagenUrl || item.foto_url || item.image;
+    if (!img) return '/placeholder.png';
+    if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
+      return img;
+    }
+    if (typeof img === 'string' && img.startsWith('/uploads/')) {
+      return `${API_BASE_URL}${img}`;
+    }
+    if (typeof img === 'string' && img.startsWith('/')) {
+      return `${API_BASE_URL}${img}`;
+    }
+    return `${API_BASE_URL}/uploads/${img}`;
+  };
+
   // Show status-driven toast notifications
   const showNotification = (message, isError = false) => {
     setToast({ message, type: isError ? 'error' : 'success' });
@@ -333,13 +350,14 @@ const DetallePublicacion = () => {
           
           {/* Main Device Image Card */}
           <div className="bg-white rounded-[2rem] border border-slate-100 p-4 shadow-sm relative overflow-hidden group">
-            {publicacion.foto ? (
+            {publicacion && (
               <div className="aspect-[16/10] bg-slate-50 rounded-2xl overflow-hidden relative">
                 <img
-                  src={`${API_BASE_URL}/uploads/${publicacion.foto}`}
-                  alt={publicacion.titulo}
+                  src={getImagenUrl(publicacion)}
+                  alt={publicacion.titulo || 'Publicación'}
                   className="w-full h-full object-cover cursor-pointer transform group-hover:scale-105 transition duration-500"
                   onClick={() => setImagenAmpliada(true)}
+                  onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
                 />
                 <div 
                   onClick={() => setImagenAmpliada(true)}
@@ -350,7 +368,8 @@ const DetallePublicacion = () => {
                   </span>
                 </div>
               </div>
-            ) : (
+            )}
+            {!publicacion.foto && (
               <div className="aspect-[16/10] bg-slate-50 rounded-2xl flex flex-col items-center justify-center border border-dashed border-slate-200">
                 <Cpu className="w-16 h-16 text-[#00b0ca]/30 mb-3" />
                 <span className="text-slate-400 font-bold text-sm">Sin imagen disponible</span>

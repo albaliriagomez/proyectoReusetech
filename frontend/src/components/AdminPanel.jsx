@@ -20,6 +20,22 @@ import {
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 
+const getImagenUrl = (pub) => {
+  if (!pub) return '/placeholder.png';
+  const img = pub.imagen_url || pub.imagen || pub.foto || pub.imagenUrl || pub.foto_url || pub.image;
+  if (!img) return '/placeholder.png';
+  if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
+    return img;
+  }
+  if (typeof img === 'string' && img.startsWith('/uploads/')) {
+    return `${API}${img}`;
+  }
+  if (typeof img === 'string' && img.startsWith('/')) {
+    return `${API}${img}`;
+  }
+  return `${API}/uploads/${img}`;
+};
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const fmt     = (n) => Number(n || 0).toLocaleString('es-BO');
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-BO',  { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -670,12 +686,12 @@ const GestionPublicaciones = ({ publicaciones, onDelete, onToggle }) => {
               <Td><span className="text-slate-400 text-xs">{p.id}</span></Td>
               <Td>
                 <div className="flex items-center gap-2.5">
-                  {p.foto
-                    ? <img src={`${API}/uploads/${p.foto}`} alt="" className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-slate-100"/>
-                    : <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-cyan-50">
-                        <Cpu size={14} className="text-cyan-500"/>
-                      </div>
-                  }
+                  <img
+                    src={getImagenUrl(p)}
+                    alt={p.titulo || ''}
+                    className="w-9 h-9 rounded-xl object-cover flex-shrink-0 border border-slate-100"
+                    onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
+                  />
                   <div>
                     <p className="text-xs font-bold text-slate-800 truncate max-w-[150px]">{p.titulo}</p>
                     <p className="text-[10px] text-slate-400 truncate max-w-[150px]">{p.marcaoModelo || p.nombredeldispositivo || '—'}</p>

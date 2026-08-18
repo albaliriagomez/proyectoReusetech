@@ -4,6 +4,22 @@ import { useNavigate } from 'react-router-dom';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 
+const getImagenUrl = (pub) => {
+  if (!pub) return '/placeholder.png';
+  const img = pub.imagen_url || pub.imagen || pub.foto || pub.imagenUrl || pub.foto_url || pub.image;
+  if (!img) return '/placeholder.png';
+  if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
+    return img;
+  }
+  if (typeof img === 'string' && img.startsWith('/uploads/')) {
+    return `${API}${img}`;
+  }
+  if (typeof img === 'string' && img.startsWith('/')) {
+    return `${API}${img}`;
+  }
+  return `${API}/uploads/${img}`;
+};
+
 const Busqueda = () => {
   const [publicaciones, setPublicaciones] = useState([]);
   const [page, setPage] = useState(1);
@@ -119,13 +135,12 @@ const Busqueda = () => {
             className="bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
             onClick={() => irADetalle(publi.id)}
           >
-            {publi.foto && (
-              <img
-                src={`${API}/uploads/${publi.foto}`}
-                alt={publi.titulo}
-                className="w-full h-48 object-cover"
-              />
-            )}
+            <img
+              src={getImagenUrl(publi)}
+              alt={publi.titulo || 'Publicación'}
+              className="w-full h-48 object-cover"
+              onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
+            />
             <div className="p-4">
               <h4 className="text-lg font-semibold text-[#0099cc]">{publi.titulo}</h4>
               <p className="text-sm text-gray-600 mt-1">

@@ -140,6 +140,24 @@ const PubCard = ({ pub }) => {
     navigate(`/chat/${user.id}/${pub.autor_id}/${pub.id}?concepto=${encodeURIComponent(concepto)}`);
   };
 
+  const getImageSrc = (pub) => {
+    if (!pub) return '/placeholder.png';
+    const img = pub.imagen_url || pub.imagen || pub.foto || pub.imagenUrl || pub.foto_url || pub.image;
+    if (!img) return '/placeholder.png';
+    if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
+      return img;
+    }
+    if (typeof img === 'string' && img.startsWith('/uploads/')) {
+      return `${API}${img}`;
+    }
+    if (typeof img === 'string' && img.startsWith('/')) {
+      return `${API}${img}`;
+    }
+    return `${API}/uploads/${img}`;
+  };
+
+  const imageSrc = getImageSrc(pub);
+
   return (
     <motion.div
       layout
@@ -152,18 +170,13 @@ const PubCard = ({ pub }) => {
       onMouseLeave={e => (e.currentTarget.style.boxShadow = '')}
     >
     <Link to={`/Detalle/${pub.id}`} className="block relative overflow-hidden" style={{ height: 200 }}>
-      {pub.foto ? (
-        <img
-          src={`${API}/uploads/${pub.foto}`}
-          alt={pub.titulo}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          loading="lazy"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center" style={{ background: 'rgba(49,194,219,0.06)' }}>
-          <Cpu size={44} style={{ color: 'rgba(49,194,219,0.3)' }} />
-        </div>
-      )}
+      <img
+        src={imageSrc}
+        alt={pub.titulo || 'Publicación'}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+        loading="lazy"
+        onError={(e) => { e.currentTarget.src = '/placeholder.png'; }}
+      />
       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* Badges */}
