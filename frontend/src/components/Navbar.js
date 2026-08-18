@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -130,110 +131,121 @@ const Navbar = () => {
 
       </div>
  
-      {/* MENÚ MÓVIL SIDEBAR (Drawer) */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9998] lg:hidden"
-              style={{ zIndex: 9998 }}
-            />
-            {/* Contenedor del menú móvil */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-80 shadow-2xl z-[9999] p-6 flex flex-col justify-between lg:hidden"
-              style={{ backgroundColor: '#ffffff', zIndex: 9999, width: '100%' }}
-            >
-              <div>
-                {/* Header Drawer */}
-                <div className="flex items-center justify-between pb-6 border-b border-slate-100 mb-6">
-                  <span className="text-xl font-extrabold tracking-tight text-slate-800">
-                    ReUse<span className="text-cyan-500">Tech</span>
-                  </span>
-                  <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-slate-500 hover:bg-slate-50 rounded-full transition-colors">
-                    <X size={20} />
-                  </button>
+      {/* MENÚ MÓVIL SIDEBAR (Drawer vía Portal a document.body para evitar transparencias) */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-[99999] flex justify-end lg:hidden" style={{ zIndex: 99999 }}>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setMobileMenuOpen(false)}
+                className="fixed inset-0 bg-slate-950/60 backdrop-blur-md"
+              />
+              {/* Drawer con Fondo Blanco 100% Sólido */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 220 }}
+                className="relative w-full sm:w-[340px] h-full bg-white shadow-2xl p-6 flex flex-col justify-between overflow-y-auto z-[100000]"
+                style={{ backgroundColor: '#ffffff', opacity: 1 }}
+              >
+                <div>
+                  {/* Header Drawer */}
+                  <div className="flex items-center justify-between pb-5 border-b border-slate-100 mb-6">
+                    <span className="text-xl font-extrabold tracking-tight text-slate-800">
+                      ReUse<span className="text-cyan-500">Tech</span>
+                    </span>
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                    >
+                      <X size={22} />
+                    </button>
+                  </div>
+
+                  {/* Info de Usuario */}
+                  {user && (
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl mb-6 border border-slate-100">
+                      <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-cyan-600 text-white rounded-xl flex items-center justify-center font-black text-lg shadow-md shadow-cyan-200 shrink-0">
+                        {user.nombre?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-black text-slate-800 truncate">{user.nombre}</p>
+                        <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-wider">{user.rol}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Enlaces de Navegación */}
+                  <div className="flex flex-col gap-2 overflow-y-auto max-h-[60vh] py-1">
+                    {navItems.map((item) => {
+                      const active = isActive(item.path);
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-xs font-black transition-all border ${
+                            item.isAdmin
+                              ? active
+                                ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-200'
+                                : 'bg-amber-50/60 text-amber-600 border-amber-200/60 hover:bg-amber-100'
+                              : active
+                                ? 'bg-cyan-500 text-white border-cyan-500 shadow-md shadow-cyan-200'
+                                : 'bg-slate-50 text-slate-700 border-slate-100 hover:bg-cyan-50 hover:text-cyan-600 hover:border-cyan-200'
+                          }`}
+                        >
+                          <span className={`p-1.5 rounded-xl shrink-0 ${active ? 'bg-white/20 text-white' : 'bg-white text-slate-600 shadow-sm'}`}>
+                            {item.icon}
+                          </span>
+                          <span className="truncate">{item.text}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* Info de Usuario */}
-                {user && (
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl mb-6 border border-slate-100">
-                    <div className="w-11 h-11 bg-gradient-to-br from-cyan-400 to-cyan-600 text-white rounded-xl flex items-center justify-center font-black text-lg shadow-md shadow-cyan-200">
-                      {user.nombre?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-black text-slate-800 truncate">{user.nombre}</p>
-                      <p className="text-[10px] text-cyan-600 font-bold uppercase tracking-wider">{user.rol}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Enlaces de Navegación (Layout en columna con padding) */}
-                <div className="flex flex-col gap-2 overflow-y-auto max-h-[55vh] py-1">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold transition-all ${
-                        item.isAdmin
-                          ? isActive(item.path)
-                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
-                            : 'text-amber-500 hover:bg-amber-50'
-                          : isActive(item.path)
-                            ? 'bg-cyan-50 text-cyan-600 border border-cyan-100'
-                            : 'text-slate-500 hover:text-cyan-600 hover:bg-slate-50'
-                      }`}
+                {/* Botón Cerrar Sesión / Login al pie */}
+                <div className="pt-6 border-t border-slate-100 mt-4">
+                  {user ? (
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setConfirmLogoutOpen(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl text-xs font-black transition-all border border-red-100"
                     >
-                      {item.icon} {item.text}
-                    </Link>
-                  ))}
+                      <LogOut size={16} /> Cerrar Sesión
+                    </button>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Link
+                        to="/login"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full py-4 text-center text-xs font-black text-slate-600 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all"
+                      >
+                        Entrar
+                      </Link>
+                      <Link
+                        to="/register"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full py-4 text-center text-xs font-black text-white bg-cyan-500 rounded-2xl hover:bg-cyan-600 shadow-md transition-all"
+                      >
+                        Registro
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Botón Cerrar Sesión / Login al pie */}
-              <div className="pt-6 border-t border-slate-100 mt-4">
-                {user ? (
-                  <button
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setConfirmLogoutOpen(true);
-                    }}
-                    className="w-full flex items-center justify-center gap-2 py-4 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl text-xs font-black transition-all"
-                  >
-                    <LogOut size={16} /> Cerrar Sesión
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      to="/login"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full py-4 text-center text-xs font-black text-slate-600 border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all"
-                    >
-                      Entrar
-                    </Link>
-                    <Link
-                      to="/register"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full py-4 text-center text-xs font-black text-white bg-cyan-500 rounded-2xl hover:bg-cyan-600 shadow-md transition-all"
-                    >
-                      Registro
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* MODAL GLOBAL DE CONFIRMACIÓN DE LOGOUT */}
       <AnimatePresence>

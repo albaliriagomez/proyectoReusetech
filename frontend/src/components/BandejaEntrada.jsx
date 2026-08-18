@@ -127,34 +127,34 @@ const BandejaEntrada = () => {
                   >
                     {/* AVATAR CON NUESTRO CELESTE */}
                     <div className="relative shrink-0">
-                      <div className="w-16 h-16 rounded-[1.3rem] bg-gradient-to-br from-[#5bc0de] to-[#46a6c2] flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-[#5bc0de]/20 group-hover:scale-105 transition-transform">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-[1.2rem] bg-gradient-to-br from-[#5bc0de] to-[#46a6c2] flex items-center justify-center text-white font-black text-xl sm:text-2xl shadow-lg shadow-[#5bc0de]/20 group-hover:scale-105 transition-transform">
                         {conv.usuario_nombre?.charAt(0).toUpperCase()}
                       </div>
-                      <div className="absolute -top-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-[4px] border-white shadow-sm" />
+                      <div className="absolute -top-1 -right-1 bg-green-500 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-[3px] sm:border-[4px] border-white shadow-sm" />
                     </div>
 
                     {/* CONTENIDO */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center mb-1">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <h4 className="font-black text-slate-900 text-lg truncate tracking-tight">{conv.usuario_nombre}</h4>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex justify-between items-center mb-1 gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <h4 className="font-black text-slate-900 text-base sm:text-lg truncate tracking-tight">{conv.usuario_nombre}</h4>
                           <CheckCircle2 size={16} className="text-[#5bc0de] shrink-0" />
                         </div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap ml-2">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap shrink-0">
                           {formatearFecha(conv.fecha)}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#5bc0de]/10 text-[#5bc0de] rounded-full border border-[#5bc0de]/20">
+                      <div className="flex items-center gap-2 mb-2 max-w-full overflow-hidden">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#5bc0de]/10 text-[#5bc0de] rounded-full border border-[#5bc0de]/20 max-w-full overflow-hidden">
                           <Smartphone size={12} className="shrink-0" />
-                          <span className="text-[9px] font-black truncate uppercase tracking-wider leading-none">
+                          <span className="text-[9px] font-black truncate max-w-[130px] sm:max-w-[260px] uppercase tracking-wider leading-none">
                             {conv.publicacion_titulo}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-slate-500 text-sm font-bold line-clamp-1 group-hover:text-slate-800 transition-colors">
+                      <p className="text-slate-500 text-xs sm:text-sm font-bold line-clamp-1 group-hover:text-slate-800 transition-colors">
                         {conv.contenido || "Enviado un mensaje..."}
                       </p>
                     </div>
