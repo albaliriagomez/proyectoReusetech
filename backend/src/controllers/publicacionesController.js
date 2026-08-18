@@ -56,19 +56,29 @@ function enriquecerConImpacto(row) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
+const parseId = (val) => {
+  if (val === undefined || val === null || val === '') return null;
+  const parsed = Array.isArray(val) ? parseInt(val[0], 10) : parseInt(val, 10);
+  return isNaN(parsed) ? null : parsed;
+};
+
 const createPublicacion = async (req, res) => {
   try {
-    const { titulo, nombredeldispositivo, marcaoModelo, categoria, descripcion, contacto, ubicacion, autor_id, verificacion_id } = req.body;
+    console.log('📦 [CREATE PUBLICACION] req.body:', req.body);
+    const { titulo, nombredeldispositivo, marcaoModelo, categoria, descripcion, contacto, ubicacion, autor_id, verificacion_id, usuario_id, categoria_id } = req.body;
     const foto = req.file ? req.file.filename : null;
 
+    const autorIdParsed = parseId(autor_id || usuario_id);
+    const verificacionIdParsed = parseId(verificacion_id);
+
     // Validar verificacion_id
-    if (!verificacion_id) {
+    if (!verificacionIdParsed) {
       return res.status(400).json({ message: 'Se requiere una verificación de salud por IA válida para publicar.' });
     }
 
     const verifResult = await pool.query(
       'SELECT estado_calculado FROM verificaciones_salud WHERE id = $1',
-      [verificacion_id]
+      [verificacionIdParsed]
     );
 
     if (verifResult.rows.length === 0) {
@@ -81,7 +91,21 @@ const createPublicacion = async (req, res) => {
     INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id, verificacion_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
 
-    const values = [titulo, nombredeldispositivo, marcaoModelo, categoria, estadoReal, descripcion, contacto, ubicacion, foto, autor_id, verificacion_id];
+    const cleanStr = (val) => (Array.isArray(val) ? val[0] : val);
+
+    const values = [
+      cleanStr(titulo),
+      cleanStr(nombredeldispositivo),
+      cleanStr(marcaoModelo),
+      cleanStr(categoria),
+      estadoReal,
+      cleanStr(descripcion),
+      cleanStr(contacto),
+      cleanStr(ubicacion),
+      foto,
+      autorIdParsed,
+      verificacionIdParsed
+    ];
 
     const result = await pool.query(query, values);
 
@@ -314,11 +338,12 @@ const getPublicacionesByUser = async (req, res) => {
 const donarPublicacion = async (req, res) => {
   const { id } = req.params;
   const { usuario_receptor_id } = req.body;
+  const receptorIdParsed = parseId(usuario_receptor_id);
 
   try {
     // Leer la publicación actual para calcular el impacto ambiental
     const { rows: pubRows } = await pool.query(
-      'SELECT * FROM publicaciones WHERE id = $1', [id]
+      'SELECT * FROM publicaciones WHERE id = $1', [parseId(id)]
     );
     if (!pubRows[0]) return res.status(404).json({ message: 'Publicación no encontrada' });
 
@@ -332,7 +357,7 @@ const donarPublicacion = async (req, res) => {
          SET estado = 'Donado', usuario_receptor_id = $1, fecha_donacion = NOW()
          WHERE id = $2
          RETURNING *`,
-        [usuario_receptor_id, id]
+        [receptorIdParsed, parseId(id)]
       );
       updatedRow = rows[0];
     } catch {
