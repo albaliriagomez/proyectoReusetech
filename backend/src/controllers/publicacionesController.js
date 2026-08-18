@@ -96,8 +96,8 @@ const createPublicacion = async (req, res) => {
     const estadoReal = verifResult.rows[0].estado_calculado;
 
     const query = `
-    INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, imagen_url, autor_id, verificacion_id)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`;
+    INSERT INTO publicaciones (titulo, nombredeldispositivo, marcaoModelo, categoria, estado, descripcion, contacto, ubicacion, foto, autor_id, verificacion_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`;
 
     const cleanStr = (val) => (Array.isArray(val) ? val[0] : val);
 
@@ -110,7 +110,6 @@ const createPublicacion = async (req, res) => {
       cleanStr(descripcion),
       cleanStr(contacto),
       cleanStr(ubicacion),
-      imagenFinal,
       imagenFinal,
       autorIdParsed,
       verificacionIdParsed
