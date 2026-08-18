@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 import { useNavigate } from 'react-router-dom';
 
 const Busqueda = () => {
@@ -32,7 +34,7 @@ const Busqueda = () => {
         Object.entries(filtros).filter(([_, valor]) => valor.trim() !== '' && valor !== 'Todos')
       );
   
-      const res = await axios.get('http://localhost:5000/api/publicaciones', {
+      const res = await axios.get(`${API}/api/publicaciones`, {
         params: {
           page,
           limit,
@@ -119,7 +121,7 @@ const Busqueda = () => {
           >
             {publi.foto && (
               <img
-                src={`http://localhost:5000/uploads/${publi.foto}`}
+                src={`${API}/uploads/${publi.foto}`}
                 alt={publi.titulo}
                 className="w-full h-48 object-cover"
               />

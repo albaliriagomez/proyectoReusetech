@@ -9,7 +9,7 @@ import {
   Heart, CheckCircle, X, Users, Leaf
 } from 'lucide-react';
 
-const API = 'http://localhost:5000';
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 
 // ─── Estado inicial del modal de donación ────────────────────────────────────
 const MODAL_INITIAL = {

@@ -8,7 +8,8 @@ import {
   Check, CheckCheck, MoreVertical
 } from 'lucide-react';
 
-const socket = io('http://localhost:5000');
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+const socket = io(API_BASE_URL);
 
 const ChatPrivado = () => {
   const { usuarioId, emisorId, publicacionId } = useParams();
@@ -52,7 +53,7 @@ const ChatPrivado = () => {
 
   const marcarTodosComoLeidos = async () => {
     try {
-      await axios.put(`http://localhost:5000/api/mensajes/leer/${room}`, { lectorId: remitente });
+      await axios.put(`${API_BASE_URL}/api/mensajes/leer/${room}`, { lectorId: remitente });
       socket.emit('messagesRead', { room, lectorId: remitente });
       fetchConversaciones();
     } catch (error) {
@@ -63,7 +64,7 @@ const ChatPrivado = () => {
   const fetchConversaciones = async () => {
     try {
       setLoadingChats(true);
-      const res = await axios.get(`http://localhost:5000/api/conversaciones/${remitente}`);
+      const res = await axios.get(`${API_BASE_URL}/api/conversaciones/${remitente}`);
       setConversaciones(res.data);
     } catch (err) {
       console.error(err);
@@ -74,7 +75,7 @@ const ChatPrivado = () => {
 
   const cargarInfoChat = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/mensajes/info-chat/${publicacionId}/${destinatario}`);
+      const res = await axios.get(`${API_BASE_URL}/api/mensajes/info-chat/${publicacionId}/${destinatario}`);
       setContactoName(`${res.data.nombre} ${res.data.apellidos || ''}`.trim());
       setProductoTitle(res.data.publicacion_titulo || '');
       setEstadoDispositivo(res.data.publicacion_estado || '');
@@ -86,7 +87,7 @@ const ChatPrivado = () => {
   const cargarMensajes = async () => {
     setCargando(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/mensajes/${publicacionId}/${remitente}/${destinatario}`);
+      const res = await axios.get(`${API_BASE_URL}/api/mensajes/${publicacionId}/${remitente}/${destinatario}`);
       setMensajes(res.data);
       marcarTodosComoLeidos();
     } catch (error) { 
@@ -154,7 +155,7 @@ const ChatPrivado = () => {
       contenido: nuevoMensaje,
     };
     try {
-      const res = await axios.post(`http://localhost:5000/api/mensajes`, mensajeData);
+      const res = await axios.post(`${API_BASE_URL}/api/mensajes`, mensajeData);
       socket.emit('sendMessage', { ...res.data, room });
       setNuevoMensaje('');
       inputRef.current?.focus();

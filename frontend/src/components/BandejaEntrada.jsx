@@ -21,7 +21,8 @@ const BandejaEntrada = () => {
     if (!usuario?.id) return;
     try {
       setLoading(true);
-      const res = await axios.get(`http://localhost:5000/api/conversaciones/${usuario.id}`);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const res = await axios.get(`${backendUrl}/api/conversaciones/${usuario.id}`);
       setConversaciones(res.data);
       setError(null);
     } catch (err) {

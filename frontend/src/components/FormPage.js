@@ -21,6 +21,7 @@ import {
 
 // ─── API Key ──────────────────────────────────────────────────────────
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDA6ZQGx-Ih-qm7IaIiaPGeKnY7Z4OyRk4';
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 
 // ─── Estilos globales corporativos ────────────────────────────────────
 const injectStyles = () => {
@@ -463,7 +464,7 @@ const Formulario = () => {
         dispositivo: qaData.dispositivo
       };
 
-      const res = await axios.post('http://localhost:5000/api/diagnostico-ia', payload);
+      const res = await axios.post(`${backendUrl}/api/diagnostico-ia`, payload);
       const resultPayload = res.data?.data || res.data?.resultado || res.data;
       setDiagnosticoResult(resultPayload);
 
@@ -536,7 +537,7 @@ const Formulario = () => {
       loadingIndicator.innerHTML = '<div style="background:white;padding:20px;border-radius:10px;text-align:center;font-family:sans-serif;"><h3>Publicando dispositivo certificado...</h3></div>';
       document.body.appendChild(loadingIndicator);
 
-      await axios.post('http://localhost:5000/api/publicaciones', form, {
+      await axios.post(`${backendUrl}/api/publicaciones`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

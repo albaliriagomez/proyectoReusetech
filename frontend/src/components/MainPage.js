@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
-const API = 'http://localhost:5000';
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 const LIMIT = 12;
 
 const CATEGORIAS = [

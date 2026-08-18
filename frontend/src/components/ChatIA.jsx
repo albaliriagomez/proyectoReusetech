@@ -27,7 +27,8 @@ export default function ChatIA() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/chatbot', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const response = await fetch(`${backendUrl}/api/chatbot`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mensaje: prompt })

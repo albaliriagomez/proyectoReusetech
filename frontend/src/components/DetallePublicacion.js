@@ -8,7 +8,7 @@ import {
   Mail, ChevronRight, Leaf, Shield, Sparkles, Star, Eye
 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 
 const DetallePublicacion = () => {
   const { id } = useParams();

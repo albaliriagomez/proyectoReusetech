@@ -18,7 +18,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 
-const API = 'http://localhost:5000';
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 const fmt     = (n) => Number(n || 0).toLocaleString('es-BO');

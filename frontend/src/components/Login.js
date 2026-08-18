@@ -18,7 +18,8 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/login', form);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const response = await axios.post(`${backendUrl}/api/login`, form);
       const { token, user } = response.data;
 
       localStorage.setItem('token',  token);

@@ -27,7 +27,8 @@ const PerfilUsuario = () => {
   const guardarCambios = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:5000/api/usuarios/${usuarioInicial.id}`, formData, {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const response = await axios.put(`${backendUrl}/api/usuarios/${usuarioInicial.id}`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

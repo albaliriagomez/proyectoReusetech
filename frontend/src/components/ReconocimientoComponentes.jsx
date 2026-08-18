@@ -608,7 +608,8 @@ const EscanerInteligente = () => {
     const formData = new FormData();
     formData.append("image", image);
     try {
-      const response = await fetch("http://localhost:5000/api/analizar-hardware", { method: "POST", body: formData });
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const response = await fetch(`${backendUrl}/api/analizar-hardware`, { method: "POST", body: formData });
       const data = await response.json();
       if (!response.ok || !data.exito) {
         alert(`${data.mensaje || "Error en el análisis"}\n${data.sugerencia || ""}`);

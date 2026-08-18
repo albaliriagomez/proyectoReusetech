@@ -30,7 +30,8 @@ const Register = () => {
     e.preventDefault();
     if (!aceptaPoliticas) return;
     try {
-      await axios.post('http://localhost:5000/api/register', formData);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      await axios.post(`${backendUrl}/api/register`, formData);
       alert('¡Bienvenido a la comunidad!');
       navigate('/login');
     } catch (error) {
