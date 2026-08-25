@@ -7,7 +7,7 @@ ENV TZ=America/La_Paz
 RUN apk add --no-cache tzdata
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 COPY . .
 
@@ -21,7 +21,7 @@ ENV TZ=America/La_Paz
 RUN apk add --no-cache tzdata
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --legacy-peer-deps --omit=dev
 
 COPY --from=builder /app ./
 
