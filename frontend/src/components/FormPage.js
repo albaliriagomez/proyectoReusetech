@@ -17,11 +17,11 @@ import {
   Upload,
   MapPin,
   Check
-} from 'lucide-react';
+import { API_BASE_URL } from '../api';
 
 // ─── API Key ──────────────────────────────────────────────────────────
 const GOOGLE_MAPS_API_KEY = 'AIzaSyDA6ZQGx-Ih-qm7IaIiaPGeKnY7Z4OyRk4';
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+const backendUrl = API_BASE_URL;
 
 // ─── Estilos globales corporativos ────────────────────────────────────
 const injectStyles = () => {

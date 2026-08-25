@@ -1,0 +1,43 @@
+pipeline {
+    agent {
+        label 'server_104.142'
+    }
+    environment {
+        GIT_URL = 'https://github.com/alcaldiacochabamba/reusetech.git'
+        GIT_BRANCH = 'dev'
+    }
+    stages {
+        stage('Limpieza') {
+            steps {
+                sh '''
+                    docker-compose -f docker-compose-dev.yml down --remove-orphans || true
+                    docker system prune -f
+                '''
+            }
+        }
+        stage('Clonar y Configurar') {
+            steps {
+                sh '''
+                    cp backend/.env.dev backend/.env
+                    cp ia_service/monitor_camara/.env.dev ia_service/monitor_camara/.env
+                '''
+            }
+        }
+        stage('Build & Deploy') {
+            steps {
+                sh '''
+                    docker-compose -f docker-compose-dev.yml build --no-cache
+                    docker-compose -f docker-compose-dev.yml up -d
+                '''
+            }
+        }
+        stage('Diagnóstico') {
+            steps {
+                sh '''
+                    docker-compose -f docker-compose-dev.yml ps
+                    docker-compose -f docker-compose-dev.yml logs --tail=50
+                '''
+            }
+        }
+    }
+}

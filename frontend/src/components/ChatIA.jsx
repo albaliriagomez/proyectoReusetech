@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Bot, User, Sparkles, ShieldCheck, Zap } from "lucide-react";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+import { API_BASE_URL } from '../api';
 
 export default function ChatIA() {
   const [userInput, setUserInput] = useState("");

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../api';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,7 +31,7 @@ const Register = () => {
     e.preventDefault();
     if (!aceptaPoliticas) return;
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const backendUrl = API_BASE_URL;
       await axios.post(`${backendUrl}/api/register`, formData);
       alert('¡Bienvenido a la comunidad!');
       navigate('/login');

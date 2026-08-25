@@ -8,7 +8,7 @@ import {
   Check, CheckCheck, MoreVertical
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+import { API_BASE_URL } from '../api';
 const socket = io(API_BASE_URL);
 
 const ChatPrivado = () => {

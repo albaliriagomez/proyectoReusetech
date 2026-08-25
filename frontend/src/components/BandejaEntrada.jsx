@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { API_BASE_URL } from '../api';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,7 +22,7 @@ const BandejaEntrada = () => {
     if (!usuario?.id) return;
     try {
       setLoading(true);
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const backendUrl = API_BASE_URL;
       const res = await axios.get(`${backendUrl}/api/conversaciones/${usuario.id}`);
       setConversaciones(res.data);
       setError(null);

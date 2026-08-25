@@ -62,6 +62,12 @@ const parseId = (val) => {
   return isNaN(parsed) ? null : parsed;
 };
 
+const cleanFilename = (val) => {
+  if (!val || typeof val !== 'string') return null;
+  const clean = val.split('?')[0].split('#')[0];
+  return path.basename(clean);
+};
+
 const createPublicacion = async (req, res) => {
   try {
     console.log('📸 Datos de imagen recibidos:', { file: req.file, body_imagen: req.body.imagen, body_imagen_url: req.body.imagen_url });
@@ -69,12 +75,13 @@ const createPublicacion = async (req, res) => {
     const { titulo, nombredeldispositivo, marcaoModelo, categoria, descripcion, contacto, ubicacion, autor_id, verificacion_id, usuario_id, categoria_id } = req.body;
     
     // Guardar únicamente el nombre del archivo (req.file.filename) en la BD
-    let imagenFinal = null;
+    let rawImagen = null;
     if (req.file) {
-      imagenFinal = req.file.filename || req.file.path || null;
+      rawImagen = req.file.filename || req.file.path || null;
     } else {
-      imagenFinal = req.body.imagen_url || req.body.imagen || req.body.foto || null;
+      rawImagen = req.body.imagen_url || req.body.imagen || req.body.foto || null;
     }
+    const imagenFinal = cleanFilename(rawImagen);
 
     const autorIdParsed = parseId(autor_id || usuario_id);
     const verificacionIdParsed = parseId(verificacion_id);

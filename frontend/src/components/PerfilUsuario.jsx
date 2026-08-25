@@ -1,5 +1,5 @@
 // src/components/PerfilUsuario.jsx
-import React, { useState } from 'react';
+import { API_BASE_URL } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -27,7 +27,7 @@ const PerfilUsuario = () => {
   const guardarCambios = async () => {
     try {
       const token = localStorage.getItem('token');
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+      const backendUrl = API_BASE_URL;
       const response = await axios.put(`${backendUrl}/api/usuarios/${usuarioInicial.id}`, formData, {
         headers: { Authorization: `Bearer ${token}` },
       });

@@ -8,7 +8,7 @@ import {
   Mail, ChevronRight, Leaf, Shield, Sparkles, Star, Eye
 } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+import { API_BASE_URL, getFotoUrl } from '../api';
 
 const DetallePublicacion = () => {
   const { id } = useParams();
@@ -38,22 +38,7 @@ const DetallePublicacion = () => {
   })();
   const remitente_id = user?.id;
 
-  // Helper to resolve publication image URL correctly
-  const getImagenUrl = (item) => {
-    if (!item) return '/placeholder.png';
-    const img = item.imagen_url || item.imagen || item.foto || item.imagenUrl || item.foto_url || item.image;
-    if (!img) return '/placeholder.png';
-    if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
-      return img;
-    }
-    if (typeof img === 'string' && img.startsWith('/uploads/')) {
-      return `${API_BASE_URL}${img}`;
-    }
-    if (typeof img === 'string' && img.startsWith('/')) {
-      return `${API_BASE_URL}${img}`;
-    }
-    return `${API_BASE_URL}/uploads/${img}`;
-  };
+  const getImagenUrl = (item) => getFotoUrl(item);
 
   // Show status-driven toast notifications
   const showNotification = (message, isError = false) => {
@@ -560,7 +545,7 @@ const DetallePublicacion = () => {
                     <div className="aspect-video bg-slate-50 overflow-hidden relative">
                       {item.foto ? (
                         <img 
-                          src={`${API_BASE_URL}/uploads/${item.foto}`} 
+                          src={getImagenUrl(item)} 
                           alt={item.titulo}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                         />
@@ -768,7 +753,7 @@ const DetallePublicacion = () => {
               onClick={(e) => e.stopPropagation()}
             >
               <img 
-                src={`${API_BASE_URL}/uploads/${publicacion.foto}`} 
+                src={getImagenUrl(publicacion)} 
                 alt={publicacion.titulo}
                 className="max-h-[85vh] max-w-full object-contain rounded-3xl border border-white/10 shadow-2xl"
               />

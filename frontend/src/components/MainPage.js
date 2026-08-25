@@ -10,8 +10,10 @@ import {
   Smartphone, Laptop, Tablet, Box 
 } from 'lucide-react';
 
+import { API_BASE_URL, getFotoUrl } from '../api';
+
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+const API = API_BASE_URL;
 const LIMIT = 12;
 
 const CATEGORIAS = [
@@ -141,21 +143,7 @@ const PubCard = ({ pub }) => {
     navigate(`/chat/${user.id}/${pub.autor_id}/${pub.id}?concepto=${encodeURIComponent(concepto)}`);
   };
 
-  const getImageSrc = (pub) => {
-    if (!pub) return '/placeholder.png';
-    const img = pub.imagen_url || pub.imagen || pub.foto || pub.imagenUrl || pub.foto_url || pub.image;
-    if (!img) return '/placeholder.png';
-    if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
-      return img;
-    }
-    if (typeof img === 'string' && img.startsWith('/uploads/')) {
-      return `${API}${img}`;
-    }
-    if (typeof img === 'string' && img.startsWith('/')) {
-      return `${API}${img}`;
-    }
-    return `${API}/uploads/${img}`;
-  };
+  const getImageSrc = (pub) => getFotoUrl(pub);
 
   const imageSrc = getImageSrc(pub);
 

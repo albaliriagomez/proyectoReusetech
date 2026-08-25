@@ -2,23 +2,11 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://proyectoreusetech-backend.onrender.com';
+import { API_BASE_URL, getFotoUrl } from '../api';
 
-const getImagenUrl = (pub) => {
-  if (!pub) return '/placeholder.png';
-  const img = pub.imagen_url || pub.imagen || pub.foto || pub.imagenUrl || pub.foto_url || pub.image;
-  if (!img) return '/placeholder.png';
-  if (typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:'))) {
-    return img;
-  }
-  if (typeof img === 'string' && img.startsWith('/uploads/')) {
-    return `${API}${img}`;
-  }
-  if (typeof img === 'string' && img.startsWith('/')) {
-    return `${API}${img}`;
-  }
-  return `${API}/uploads/${img}`;
-};
+const API = API_BASE_URL;
+
+const getImagenUrl = (pub) => getFotoUrl(pub);
 
 const Busqueda = () => {
   const [publicaciones, setPublicaciones] = useState([]);

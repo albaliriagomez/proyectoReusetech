@@ -16,7 +16,7 @@ const diagnosticoRoute   = require('./routes/diagnosticoRoute');
 const visionRoute        = require('./routes/visionRoute');
 
 const app  = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || process.env.APP_PORT || 3001;
 
 // ── Middleware global ─────────────────────────────────────────────────────────
 app.use(cors());
