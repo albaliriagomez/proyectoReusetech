@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt   = require('jsonwebtoken');
 const pool = require('../config/db');
-const { registrarEvento } = require('../config/influx');
 
 const register = async (req, res) => {
   const { nombre, apellidos, email, password, rol } = req.body;
@@ -23,8 +22,7 @@ const register = async (req, res) => {
        VALUES ($1, $2, $3, $4, $5) RETURNING *`,
       [nombre, apellidos, email, hashedPassword, mappedRol]
     );
-    // 📊 Enviar evento a InfluxDB
-    registrarEvento('registro', { rol: mappedRol }, { count: 1 });
+
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -58,8 +56,6 @@ const login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // 📊 Enviar evento a InfluxDB
-    registrarEvento('login', { rol: user.rol || 'usuario' }, { count: 1, user_id: user.id });
 
     // Excluir el hash de contraseña de la respuesta
     const { password: _pwd, ...safeUser } = user;

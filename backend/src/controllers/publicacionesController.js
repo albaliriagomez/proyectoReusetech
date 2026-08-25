@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const pool = require('../config/db');
-const { registrarEvento } = require('../config/influx');
 
 // Configuración de almacenamiento de imágenes
 const storage = multer.diskStorage({
@@ -124,17 +123,6 @@ const createPublicacion = async (req, res) => {
 
     const result = await pool.query(query, values);
 
-    // 📊 InfluxDB → alimenta gráficas de Categorías, Ubicaciones y Tendencia en Grafana
-    registrarEvento(
-      'nueva_publicacion',
-      {
-        categoria: categoria || 'sin_categoria',
-        ubicacion: ubicacion || 'sin_ubicacion',
-        estado:    estadoReal || 'sin_estado',
-      },
-      { count: 1 }
-    );
-
     const publicacion = enriquecerConImpacto(result.rows[0]);
     res.status(201).json({ message: 'Publicación creada con éxito', data: publicacion });
   } catch (error) {
@@ -168,23 +156,7 @@ const deletePublicacion = async (req, res) => {
       const filePath = path.join(__dirname, '../../uploads', rows[0].foto);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath); // borra imagen del disco
     }
-    // Obtener datos de la publicación para InfluxDB antes de borrarla
-    const { rows: pubData } = await pool.query(
-      'SELECT categoria, ubicacion FROM publicaciones WHERE id = $1', [id]
-    );
     await pool.query('DELETE FROM publicaciones WHERE id = $1', [id]);
-
-    // 📊 InfluxDB → registra bajas para mantener métricas limpias
-    if (pubData[0]) {
-      registrarEvento(
-        'baja_publicacion',
-        {
-          categoria: pubData[0].categoria || 'sin_categoria',
-          ubicacion: pubData[0].ubicacion || 'sin_ubicacion',
-        },
-        { count: 1 }
-      );
-    }
 
     res.json({ message: 'Publicación eliminada' });
   } catch (err) {
@@ -390,20 +362,6 @@ const donarPublicacion = async (req, res) => {
 
     // Calcular impacto ambiental con los datos de la publicación ORIGINAL
     const impacto = calcularImpacto(pub.categoria, pub.estado);
-
-    // 📊 Enviar métrica a InfluxDB
-    registrarEvento(
-      'donaciones_ambientales',
-      {
-        categoria:        pub.categoria     || 'desconocida',
-        estado_dispositivo: pub.estado      || 'desconocido',
-      },
-      {
-        co2_evitado:         impacto.co2_evitado,
-        arboles_equivalentes: impacto.arboles_equivalentes,
-        cantidad:            1,
-      }
-    );
 
     res.json({
       message: 'Donación confirmada con éxito',

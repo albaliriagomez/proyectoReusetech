@@ -1,5 +1,4 @@
 const pool = require('../config/db');
-const { registrarEvento } = require('../config/influx');
 
 const createMensaje = async (req, res) => {
   const { remitente_id, destinatario_id, publicacion_id, contenido } = req.body;
@@ -8,9 +7,6 @@ const createMensaje = async (req, res) => {
                    VALUES ($1, $2, $3, $4) RETURNING *`;
     const values = [remitente_id, destinatario_id, publicacion_id, contenido];
     const result = await pool.query(query, values);
-
-    // 📊 Enviar evento a InfluxDB
-    registrarEvento('mensaje', { tipo: 'enviado' }, { count: 1, publicacion_id: parseInt(publicacion_id) || 0 });
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
