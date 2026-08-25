@@ -17,6 +17,7 @@ import {
   Upload,
   MapPin,
   Check
+} from 'lucide-react';
 import { API_BASE_URL } from '../api';
 
 // ─── API Key ──────────────────────────────────────────────────────────

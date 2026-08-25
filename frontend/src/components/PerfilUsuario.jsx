@@ -1,4 +1,5 @@
 // src/components/PerfilUsuario.jsx
+import React, { useState } from 'react';
 import { API_BASE_URL } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
