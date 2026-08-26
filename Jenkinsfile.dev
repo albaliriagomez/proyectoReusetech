@@ -19,6 +19,7 @@ pipeline {
             steps {
                 sh '''
                     cp backend/.env.dev backend/.env
+                    cp frontend/.env.dev frontend/.env
                     cp ia_service/monitor_camara/.env.dev ia_service/monitor_camara/.env
                 '''
             }

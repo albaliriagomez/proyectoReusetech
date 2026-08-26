@@ -1,4 +1,13 @@
-export const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://192.168.104.201:3001';
+const resolveApiBaseUrl = () => {
+  let url = process.env.REACT_APP_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || process.env.REACT_APP_API_URL || 'https://reusetechdev.cochabamba.bo';
+  if (url.endsWith('/api')) {
+    url = url.substring(0, url.length - 4);
+  }
+  return url;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
+
 
 export const getFotoUrl = (pub) => {
   if (!pub) return '/placeholder.png';
